@@ -8,4 +8,5 @@
     <string name="location_service">Location Service</string>
     <string name="location">Location</string>
     <string name="maps_api_key">AIzaSyCR92NpsvhdDbSiWxRh3IW-DfFfjIPS-2Q</string>
+    <string name="launch">Launch</string>
 </resources>

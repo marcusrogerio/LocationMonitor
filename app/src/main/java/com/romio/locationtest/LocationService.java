@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
@@ -27,25 +28,49 @@ import com.google.android.gms.location.LocationServices;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class LocationService extends Service {
     public static final String START = "com.romio.locationtest.location.service.start";
+    public static final String DATA = "com.romio.locationtest.location.service.data";
     public static final String STOP = "com.romio.locationtest.location.service.stop";
-    public static final String LATITUDE = "com.romio.locationtest.location.latitude";
-    public static final String LONGITUDE = "com.romio.locationtest.location.longitude";
 
     private static final String TAG = LocationService.class.getSimpleName();
+    private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
     private GoogleApiClient googleApiClient;
+    private ArrayList<TargetArea> targets;
+    private TargetArea currentArea;
+    private static int notificationId = 0;
+
+    enum Movement {
+        ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
+
+        private String name;
+
+        Movement(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         if (intent != null && !TextUtils.isEmpty(intent.getAction())) {
             switch (intent.getAction()) {
-                case START : {
+                case START: {
+                    targets = intent.getParcelableArrayListExtra(DATA);
+
                     startLocationService();
                     buildApiClient();
-                }  break;
+                }
+                break;
 
-                case STOP : {
+                case STOP: {
+                    notifyServiceWasStopped();
                     shutdown();
                 }
             }
@@ -54,10 +79,16 @@ public class LocationService extends Service {
         return START_STICKY;
     }
 
+    private void notifyServiceWasStopped() {
+        Intent intent = new Intent();
+        intent.setAction(LocationService.STOP);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
     private void startLocationService() {
         Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.setAction(LocationService.class.getSimpleName());
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        notificationIntent.putParcelableArrayListExtra(DATA, targets);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
         Intent stopIntent = new Intent(this, LocationService.class);
@@ -105,9 +136,104 @@ public class LocationService extends Service {
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-            showNotification(location);
+            Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
+            processLocationUpdate(location);
         }
     };
+
+    private void processLocationUpdate(Location location) {
+        if (targets == null) {
+            Log.d(TAG, "No target areas specified");
+
+        } else {
+            TargetArea newTargetArea = getCurrentArea(location);
+            String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
+            Log.d(TAG, "Current area: " + area);
+
+            if (currentArea == null && newTargetArea != null) {
+                notifyUserChangePosition(newTargetArea, Movement.ENTER_AREA);
+            }
+
+            if (currentArea != null && newTargetArea == null) {
+                notifyUserChangePosition(currentArea, Movement.LEAVE_AREA);
+            }
+
+            if (currentArea != null && newTargetArea != null && currentArea != newTargetArea) {
+                notifyUserChangePosition(currentArea, newTargetArea);
+            }
+
+            currentArea = newTargetArea;
+        }
+    }
+
+    private void notifyUserChangePosition(TargetArea currentArea, TargetArea newTargetArea) {
+        String message = "Areas changed from " + currentArea.getAreaName() + " to " + newTargetArea.getAreaName();
+        String title = "Areas changed";
+
+        notifyUser(message, title);
+    }
+
+    private void notifyUserChangePosition(TargetArea area, @NonNull Movement enterArea) {
+        String message = enterArea.getName() + " " + area.getAreaName();
+        String title = "Area status changed";
+
+        notifyUser(message, title);
+    }
+
+    private void notifyUser(String message, String title) {
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this)
+                        .setSmallIcon(R.drawable.ic_add_location_18dp)
+                        .setContentTitle(title)
+                        .setContentText(message);
+
+        Intent resultIntent = new Intent(this, MainActivity.class);
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        resultIntent.putParcelableArrayListExtra(DATA, targets);
+
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(resultPendingIntent);
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(notificationId, builder.build());
+
+        if (notificationId == MAX_NOTIFICATION_ID_NUMBER) {
+            notificationId = 0;
+        } else {
+            notificationId++;
+        }
+    }
+
+    private TargetArea getCurrentArea(Location location) {
+        for (TargetArea targetArea : targets) {
+            if (isInside(targetArea, location)) {
+                return targetArea;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isInside(TargetArea targetArea, Location location) {
+        double distance = distance(
+                targetArea.getAreaCenter().latitude,
+                targetArea.getAreaCenter().longitude,
+                location.getLatitude(),
+                location.getLongitude());
+
+        return distance <= targetArea.getRadius();
+    }
+
+    public static double distance(
+            double lat1, double lng1, double lat2, double lng2) {
+        int earthRadius = 6371; // average radius of the earth in km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double hipotenuse = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadius * hipotenuse * 1000;
+    }
 
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = new LocationRequest();
@@ -116,23 +242,6 @@ public class LocationService extends Service {
         locationRequest.setPriority(LocationRequest.PRIORITY_LOW_POWER);
 
         return locationRequest;
-    }
-
-    private void showNotification(Location location) {
-        NotificationCompat.Builder builder =
-                new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_add_location_18dp)
-                        .setContentTitle("Location changed")
-                        .setContentText("Latitude: " + location.getLatitude() + " Longitude:" + location.getLongitude());
-
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        resultIntent.putExtra(LATITUDE, location.getLatitude());
-        resultIntent.putExtra(LONGITUDE, location.getLongitude());
-
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.setContentIntent(resultPendingIntent);
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1, builder.build());
     }
 
     private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
