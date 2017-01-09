@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (getIntent().getParcelableArrayListExtra(LocationService.DATA) != null) {
             targets = getIntent().getParcelableArrayListExtra(LocationService.DATA);
+            isServiceRunning = true;
         }
 
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
