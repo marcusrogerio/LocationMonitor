@@ -2,4 +2,6 @@
 <resources>
     <!--in meters-->
     <integer name="radius">250</integer>
+    <integer name="time_interval">5000</integer>
+    <integer name="time_interval_fastest">2500</integer>
 </resources>

@@ -77,10 +77,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        if (getIntent().getParcelableArrayListExtra(LocationService.DATA) != null) {
-            targets = getIntent().getParcelableArrayListExtra(LocationService.DATA);
-            isServiceRunning = true;
-        }
+        tryToReadTargets(getIntent());
 
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
         progressBar.setVisibility(View.VISIBLE);
@@ -96,8 +93,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        tryToReadTargets(intent);
+        super.onNewIntent(intent);
+    }
+
+    private void tryToReadTargets(Intent intent) {
+        if (intent.getParcelableArrayListExtra(LocationService.DATA) != null) {
+            targets = getIntent().getParcelableArrayListExtra(LocationService.DATA);
+            isServiceRunning = true;
+
+            Log.d(TAG, "----------------!!! " + targets.size());
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+
+        if (map != null) {
+            map.clear();
+        }
+
+        targets = new ArrayList<>();
         super.onDestroy();
     }
 

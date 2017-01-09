@@ -70,6 +70,7 @@ public class LocationService extends Service {
                 break;
 
                 case STOP: {
+                    targets = null;
                     notifyServiceWasStopped();
                     shutdown();
                 }
@@ -89,11 +90,11 @@ public class LocationService extends Service {
         Intent notificationIntent = new Intent(this, MainActivity.class);
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         notificationIntent.putParcelableArrayListExtra(DATA, targets);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Intent stopIntent = new Intent(this, LocationService.class);
         stopIntent.setAction(STOP);
-        PendingIntent stopPendingIntent = PendingIntent.getService(this, 0, stopIntent, 0);
+        PendingIntent stopPendingIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder notification = new Notification.Builder(this)
                 .setContentTitle("Location Monitor")
@@ -237,8 +238,8 @@ public class LocationService extends Service {
 
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(5000);
-        locationRequest.setFastestInterval(1000);
+        locationRequest.setInterval(getResources().getInteger(R.integer.time_interval));
+        locationRequest.setFastestInterval(getResources().getInteger(R.integer.time_interval_fastest));
         locationRequest.setPriority(LocationRequest.PRIORITY_LOW_POWER);
 
         return locationRequest;
@@ -253,8 +254,14 @@ public class LocationService extends Service {
     };
 
     private void shutdown() {
+        stopListeningLocationUpdates();
         stopForeground(true);
         stopSelf();
+    }
+
+    private void stopListeningLocationUpdates() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener);
+        googleApiClient.disconnect();
     }
 
     private GoogleApiClient.ConnectionCallbacks connectionCallback = new GoogleApiClient.ConnectionCallbacks() {

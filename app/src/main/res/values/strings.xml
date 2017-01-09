@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">LocationTest</string>
+    <string name="app_name">LocationMonitor</string>
     <string name="start">Start</string>
     <string name="finish">Finish</string>
-    <string name="start_serive">Start service</string>
+    <string name="start_service">Start service</string>
     <string name="stop">Stop</string>
     <string name="listen_to_location_updates">Listen to Location Updates</string>
     <string name="location_service">Location Service</string>
