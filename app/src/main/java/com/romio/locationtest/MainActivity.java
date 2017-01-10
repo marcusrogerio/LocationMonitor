@@ -1,6 +1,8 @@
 package com.romio.locationtest;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +13,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -172,15 +175,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void startLocationService() {
-        if (!isServiceRunning) {
-            Intent intent = new Intent(this, LocationService.class);
-            intent.setAction(LocationService.START);
+        AlarmManager alarmManager = (AlarmManager)this.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, LocationIntentService.class);
+        intent.putParcelableArrayListExtra(LocationService.DATA, targets);
 
-            intent.putParcelableArrayListExtra(LocationService.DATA, targets);
-            startService(intent);
+        PendingIntent alarmIntent = PendingIntent.getService(this, 0, intent, 0);
 
-            isServiceRunning = true;
-        }
+        alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, 5000, 5000, alarmIntent);
+
+
+
+
+//        if (!isServiceRunning) {
+//            Intent intent = new Intent(this, LocationService.class);
+//            intent.setAction(LocationService.START);
+//
+//            intent.putParcelableArrayListExtra(LocationService.DATA, targets);
+//            startService(intent);
+//
+//            isServiceRunning = true;
+//        }
     }
 
     private boolean verifyGooglePlayServices() {
