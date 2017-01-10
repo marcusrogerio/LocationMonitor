@@ -131,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 } else {
                     Toast.makeText(MainActivity.this, "Can't start service yet", Toast.LENGTH_SHORT).show();
                 }
-                
+
                 updateMenuItemState();
                 return true;
             default:
@@ -182,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         PendingIntent pendingIntent = preparePendingIntent();
 
         if (!isAlarmSet()) {
-            alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, 10000, 10000, pendingIntent);
+            alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 5000, pendingIntent);
 
             saveAlarmWasSet(true);
             Toast.makeText(this, "Start listening for updates", Toast.LENGTH_SHORT).show();
