@@ -24,10 +24,11 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".LocationService"
-            android:icon="@drawable/ic_global_18dp"
-            android:process=":location_listener" />
+        <service android:name=".LocationIntentService" />
+
+        <receiver
+            android:name=".LocationAlarmReceiver"
+            android:process=":remote" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

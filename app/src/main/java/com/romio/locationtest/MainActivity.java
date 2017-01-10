@@ -3,23 +3,20 @@ package com.romio.locationtest;
 import android.Manifest;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -49,6 +46,7 @@ import butterknife.ButterKnife;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String ALARM = "com.romio.locationtest.alarm.clock";
     private GoogleMap map;
 
     private SupportMapFragment mapFragment;
@@ -58,7 +56,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
     private static int counter = 0;
-    private boolean isServiceRunning = false;
     private int zoom = 15;
 
     private ArrayList<TargetArea> targets = new ArrayList<>();
@@ -87,10 +84,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
 
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(LocationService.STOP);
-        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
-
         verifyGooglePlayServices();
         verifyPermissions();
     }
@@ -102,18 +95,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void tryToReadTargets(Intent intent) {
-        if (intent.getParcelableArrayListExtra(LocationService.DATA) != null) {
-            targets = getIntent().getParcelableArrayListExtra(LocationService.DATA);
-            isServiceRunning = true;
-
-            Log.d(TAG, "----------------!!! " + targets.size());
+        if (intent.getParcelableArrayListExtra(LocationIntentService.DATA) != null) {
+            targets = getIntent().getParcelableArrayListExtra(LocationIntentService.DATA);
         }
     }
 
     @Override
     protected void onDestroy() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
-
         if (map != null) {
             map.clear();
         }
@@ -175,26 +163,37 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void startLocationService() {
-        AlarmManager alarmManager = (AlarmManager)this.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(this, LocationIntentService.class);
-        intent.putParcelableArrayListExtra(LocationService.DATA, targets);
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(getApplicationContext(), LocationAlarmReceiver.class);
+        intent.setAction(LocationAlarmReceiver.ACTION);
+        intent.putParcelableArrayListExtra(LocationIntentService.DATA, targets);
 
-        PendingIntent alarmIntent = PendingIntent.getService(this, 0, intent, 0);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, LocationAlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, 5000, 5000, alarmIntent);
+        if (!isAlarmSet()) {
+            alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, 10000, 10000, pendingIntent);
 
+            saveAlarmWasSet(true);
+            Toast.makeText(this, "Start listening for updates", Toast.LENGTH_SHORT).show();
 
+        } else {
+            alarmManager.cancel(pendingIntent);
+            saveAlarmWasSet(false);
+            Toast.makeText(this, "Stop listening for updates", Toast.LENGTH_SHORT).show();
+        }
+    }
 
+    private boolean isAlarmSet() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return sharedPreferences.getBoolean(ALARM, false);
+    }
 
-//        if (!isServiceRunning) {
-//            Intent intent = new Intent(this, LocationService.class);
-//            intent.setAction(LocationService.START);
-//
-//            intent.putParcelableArrayListExtra(LocationService.DATA, targets);
-//            startService(intent);
-//
-//            isServiceRunning = true;
-//        }
+    private void saveAlarmWasSet(boolean isSet) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences
+                .edit()
+                .putBoolean(ALARM, isSet)
+                .commit();
     }
 
     private boolean verifyGooglePlayServices() {
@@ -351,13 +350,4 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     }
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (TextUtils.equals(intent.getAction(), LocationService.STOP)) {
-                MainActivity.this.isServiceRunning = false;
-            }
-        }
-    };
 }

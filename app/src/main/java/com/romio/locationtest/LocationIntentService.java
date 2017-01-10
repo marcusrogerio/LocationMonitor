@@ -49,6 +49,7 @@ public class LocationIntentService extends Service {
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
+    private boolean isRunning = false;
 
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
@@ -148,6 +149,7 @@ public class LocationIntentService extends Service {
         public void onLocationChanged(Location location) {
             if (location != null) {
                 Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
+                Toast.makeText(LocationIntentService.this, "Location updated", Toast.LENGTH_SHORT).show();
                 processLocationUpdate(location);
 
                 shutdown();
@@ -173,11 +175,11 @@ public class LocationIntentService extends Service {
             Log.d(TAG, "Current area: " + area);
 
             if (currentArea == null && newTargetArea != null) {
-                notifyUserChangePosition(newTargetArea, LocationService.Movement.ENTER_AREA);
+                notifyUserChangePosition(newTargetArea, LocationIntentService.Movement.ENTER_AREA);
             }
 
             if (currentArea != null && newTargetArea == null) {
-                notifyUserChangePosition(currentArea, LocationService.Movement.LEAVE_AREA);
+                notifyUserChangePosition(currentArea, LocationIntentService.Movement.LEAVE_AREA);
             }
 
             if (currentArea != null && newTargetArea != null && currentArea != newTargetArea) {
@@ -195,7 +197,7 @@ public class LocationIntentService extends Service {
         notifyUser(message, title);
     }
 
-    private void notifyUserChangePosition(TargetArea area, @NonNull LocationService.Movement enterArea) {
+    private void notifyUserChangePosition(TargetArea area, @NonNull LocationIntentService.Movement enterArea) {
         String message = enterArea.getName() + " " + area.getAreaName();
         String title = "Area status changed";
 
