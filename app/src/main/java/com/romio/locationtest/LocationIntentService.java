@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -13,6 +14,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -25,6 +27,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 
@@ -34,9 +37,14 @@ import java.util.ArrayList;
 
 public class LocationIntentService extends Service {
 
+    public static final String DATA = "com.romio.locationtest.location.service.data";
+
     private static final String TAG = LocationIntentService.class.getSimpleName();
     private static final String SERVICE_NAME = LocationIntentService.class.getName();
-    public static final String DATA = "com.romio.locationtest.location.service.data";
+    private static final String CURRENT_AREA_LATITUDE = "com.romio.locationtest.location.current.latItude";
+    private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
+    private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
+    private static final String CURRENT_AREA_NAME = "com.romio.locationtest.location.current.name";
 
     private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
     private static final int MAX_NUMBER_OF_FAILED_LOCATION_UPDATES = 5;
@@ -45,11 +53,9 @@ public class LocationIntentService extends Service {
     private volatile ServiceHandler mServiceHandler;
     private GoogleApiClient googleApiClient;
     private ArrayList<TargetArea> targets;
-    private TargetArea currentArea;
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
-    private boolean isRunning = false;
 
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
@@ -78,7 +84,7 @@ public class LocationIntentService extends Service {
 
         @Override
         public void handleMessage(Message msg) {
-            onHandleIntent((Intent)msg.obj);
+            onHandleIntent((Intent) msg.obj);
             startId = msg.arg1;
         }
     }
@@ -170,24 +176,61 @@ public class LocationIntentService extends Service {
             Log.d(TAG, "No target areas specified");
 
         } else {
+            TargetArea lastArea = retrieveOldArea();
             TargetArea newTargetArea = getCurrentArea(location);
             String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
             Log.d(TAG, "Current area: " + area);
 
-            if (currentArea == null && newTargetArea != null) {
+            if (lastArea == null && newTargetArea != null) {
                 notifyUserChangePosition(newTargetArea, LocationIntentService.Movement.ENTER_AREA);
             }
 
-            if (currentArea != null && newTargetArea == null) {
-                notifyUserChangePosition(currentArea, LocationIntentService.Movement.LEAVE_AREA);
+            if (lastArea != null && newTargetArea == null) {
+                notifyUserChangePosition(lastArea, LocationIntentService.Movement.LEAVE_AREA);
             }
 
-            if (currentArea != null && newTargetArea != null && currentArea != newTargetArea) {
-                notifyUserChangePosition(currentArea, newTargetArea);
+            if (lastArea != null && newTargetArea != null && !lastArea.equals(newTargetArea)) {
+                notifyUserChangePosition(lastArea, newTargetArea);
             }
 
-            currentArea = newTargetArea;
+            saveCurrentArea(newTargetArea);
         }
+    }
+
+    private void saveCurrentArea(TargetArea newTargetArea) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (newTargetArea == null) {
+            sharedPreferences
+                    .edit()
+                    .remove(CURRENT_AREA_LATITUDE)
+                    .remove(CURRENT_AREA_LONGITUDE)
+                    .remove(CURRENT_AREA_RADIUS)
+                    .remove(CURRENT_AREA_NAME)
+                    .commit();
+
+        } else {
+            sharedPreferences
+                    .edit()
+                    .putFloat(CURRENT_AREA_LATITUDE, (float) newTargetArea.getAreaCenter().latitude)
+                    .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getAreaCenter().longitude)
+                    .putInt(CURRENT_AREA_RADIUS, newTargetArea.getRadius())
+                    .putString(CURRENT_AREA_NAME, newTargetArea.getAreaName())
+                    .commit();
+        }
+    }
+
+    private TargetArea retrieveOldArea() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (!sharedPreferences.contains(CURRENT_AREA_NAME)) {
+            return null;
+        }
+
+        double latitude = sharedPreferences.getFloat(CURRENT_AREA_LATITUDE, -1);
+        double longitude = sharedPreferences.getFloat(CURRENT_AREA_LONGITUDE, -1);
+        int radius = sharedPreferences.getInt(CURRENT_AREA_RADIUS, -1);
+        String name = sharedPreferences.getString(CURRENT_AREA_NAME, "");
+
+        return new TargetArea(name, new LatLng(latitude, longitude), radius);
     }
 
     private void notifyUserChangePosition(TargetArea currentArea, TargetArea newTargetArea) {

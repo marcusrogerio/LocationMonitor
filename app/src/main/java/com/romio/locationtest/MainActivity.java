@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int REQUEST_ENABLE_LOCATION = 102;
     private static int counter = 0;
     private int zoom = 15;
+    private MenuItem itemPlayStop;
 
     private ArrayList<TargetArea> targets = new ArrayList<>();
 
@@ -114,6 +115,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main, menu);
+
+        itemPlayStop = menu.findItem(R.id.item_launch);
+        updateMenuItemState();
+
         return true;
     }
 
@@ -122,10 +127,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         switch (item.getItemId()) {
             case R.id.item_launch:
                 if (canStartService) {
-                    startLocationService();
+                    toggleLocationService();
                 } else {
                     Toast.makeText(MainActivity.this, "Can't start service yet", Toast.LENGTH_SHORT).show();
                 }
+                
+                updateMenuItemState();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -162,13 +169,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         canStartService = true;
     }
 
-    private void startLocationService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(getApplicationContext(), LocationAlarmReceiver.class);
-        intent.setAction(LocationAlarmReceiver.ACTION);
-        intent.putParcelableArrayListExtra(LocationIntentService.DATA, targets);
+    private void updateMenuItemState() {
+        if (isAlarmSet()) {
+            itemPlayStop.setIcon(R.drawable.ic_stop_24dp);
+        } else {
+            itemPlayStop.setIcon(R.drawable.ic_play_24dp);
+        }
+    }
 
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, LocationAlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+    private void toggleLocationService() {
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pendingIntent = preparePendingIntent();
 
         if (!isAlarmSet()) {
             alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, 10000, 10000, pendingIntent);
@@ -181,6 +192,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             saveAlarmWasSet(false);
             Toast.makeText(this, "Stop listening for updates", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private PendingIntent preparePendingIntent() {
+        Intent intent = new Intent(getApplicationContext(), LocationAlarmReceiver.class);
+        intent.setAction(LocationAlarmReceiver.ACTION);
+        intent.putParcelableArrayListExtra(LocationIntentService.DATA, targets);
+
+        return PendingIntent.getBroadcast(this, LocationAlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     private boolean isAlarmSet() {

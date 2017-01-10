@@ -2,6 +2,7 @@ package com.romio.locationtest;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -75,5 +76,19 @@ public class TargetArea implements Parcelable {
         dest.writeString(areaName);
         dest.writeParcelable(areaCenter, flags);
         dest.writeInt(radius);
+    }
+
+    @Override
+    public int hashCode() {
+        return (areaName + radius).hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof TargetArea) {
+            TargetArea ta2 = (TargetArea) obj;
+            return TextUtils.equals(ta2.areaName, this.areaName) && ta2.radius == this.radius;
+        }
+        return false;
     }
 }
