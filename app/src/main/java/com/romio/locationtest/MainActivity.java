@@ -35,8 +35,14 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.j256.ormlite.table.TableUtils;
+import com.romio.locationtest.data.DBManager;
+import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.TargetAreaMapper;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindColor;
 import butterknife.BindInt;
@@ -78,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        tryToReadTargets(getIntent());
+        tryToReadTargets();
 
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
         progressBar.setVisibility(View.VISIBLE);
@@ -89,15 +95,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         verifyPermissions();
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        tryToReadTargets(intent);
-        super.onNewIntent(intent);
-    }
+    private void tryToReadTargets() {
+        DBManager dbManager = ((LocationMonitorApp)getApplication()).getDBManager();
+        try {
+            List<TargetAreaDto> targetAreaDtoList = dbManager.getAreaDao().queryForAll();
+            targets = TargetAreaMapper.mapFromDto(targetAreaDtoList);
 
-    private void tryToReadTargets(Intent intent) {
-        if (intent.getParcelableArrayListExtra(LocationIntentService.DATA) != null) {
-            targets = getIntent().getParcelableArrayListExtra(LocationIntentService.DATA);
+        } catch (SQLException e) {
+            Log.e(TAG, "Error reading targets from DB", e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -108,6 +114,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         targets = new ArrayList<>();
+        ((LocationMonitorApp)getApplication()).reseaseDBManager();
+
         super.onDestroy();
     }
 
@@ -125,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.item_launch:
+            case R.id.item_launch:{
                 if (canStartService) {
                     toggleLocationService();
                 } else {
@@ -133,7 +141,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
 
                 updateMenuItemState();
-                return true;
+            } return true;
+
+            case R.id.item_clear_all: {
+                if (isAlarmSet()) {
+                    Toast.makeText(MainActivity.this, "Stop service before cleaning target areas", Toast.LENGTH_SHORT).show();
+                } else {
+                    deleteAllTargetAreas();
+                }
+            } return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -162,6 +179,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void permissionsGranted() {
         checkLocationEnabled();
+    }
+
+
+    private void deleteAllTargetAreas() {
+        targets.clear();
+
+        if (map != null) {
+            map.clear();
+        }
+
+        ((LocationMonitorApp)getApplication()).getDBManager().clearAll();
     }
 
     private void onLocationEnabled() {
@@ -283,7 +311,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         if (targets != null) {
-            addAllTargets();
+            addAllTargetsToMap();
         }
 
         initMapListeners(googleMap);
@@ -298,7 +326,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void addAllTargets() {
+    private void addAllTargetsToMap() {
         for (TargetArea targetArea : targets) {
             map.addMarker(new MarkerOptions()
                     .position(targetArea.getAreaCenter())
@@ -328,26 +356,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .strokeColor(boundColor)
                     .fillColor(areaFillColor));
 
+            TargetArea targetArea = new TargetArea(areaName, latLng, radius);
+            targets.add(targetArea);
+            addTargetAreaToDB(targetArea);
+        }
+    }
 
-            targets.add(new TargetArea(areaName, latLng, radius));
+    private void addTargetAreaToDB(@NonNull TargetArea targetArea) {
+        TargetAreaDto targetAreaDto = TargetAreaMapper.map(targetArea);
+        try {
+            ((LocationMonitorApp)getApplication()).getDBManager().getAreaDao().createOrUpdate(targetAreaDto);
+
+        } catch (SQLException e) {
+            Log.e(TAG, "Erro dding area to DB", e);
+            throw new RuntimeException(e);
         }
     }
 
     private boolean isInsideExistingArea(LatLng newTargetCenter) {
-//        for (LatLng latLng : targets) {
-//            double startLatitude = latLng.latitude - radius;
-//            double endLatitude = latLng.latitude + radius;
-//
-//            double startLongitude = latLng.longitude - radius;
-//            double endLongitude = latLng.longitude + radius;
-//
-//            if ( newTargetCenter.latitude + radius >= startLatitude &&
-//                    newTargetCenter.latitude - radius <= endLatitude &&
-//                    newTargetCenter.longitude + radius >= startLongitude &&
-//                    newTargetCenter.longitude - radius <= endLongitude) {
-//                return true;
-//            }
-//        }
+        for (TargetArea targetArea : targets) {
+            double distance = Utils.distance(newTargetCenter.latitude, newTargetCenter.longitude, targetArea.getAreaCenter().latitude, targetArea.getAreaCenter().longitude);
+
+            if (distance <= radius + targetArea.getRadius()) {
+                return true;
+            }
+        }
 
         return false;
     }
