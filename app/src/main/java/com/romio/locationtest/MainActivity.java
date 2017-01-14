@@ -35,10 +35,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.j256.ormlite.table.TableUtils;
 import com.romio.locationtest.data.DBManager;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
+import com.romio.locationtest.service.LocationMonitorService;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private PendingIntent preparePendingIntent() {
         Intent intent = new Intent(getApplicationContext(), LocationAlarmReceiver.class);
         intent.setAction(LocationAlarmReceiver.ACTION);
-        intent.putParcelableArrayListExtra(LocationIntentService.DATA, targets);
+        intent.putParcelableArrayListExtra(LocationMonitorService.DATA, targets);
 
         return PendingIntent.getBroadcast(this, LocationAlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }

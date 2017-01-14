@@ -4,7 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
-import android.widget.Toast;
+
+import com.romio.locationtest.service.LocationMonitorService;
 
 import java.util.ArrayList;
 
@@ -20,10 +21,10 @@ public class LocationAlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (TextUtils.equals(intent.getAction(), ACTION)) {
-            ArrayList<TargetArea> targets = intent.getParcelableArrayListExtra(LocationIntentService.DATA);
+            ArrayList<TargetArea> targets = intent.getParcelableArrayListExtra(LocationMonitorService.DATA);
 
-            Intent intentForService = new Intent(context, LocationIntentService.class);
-            intentForService.putParcelableArrayListExtra(LocationIntentService.DATA, targets);
+            Intent intentForService = new Intent(context, LocationMonitorService.class);
+            intentForService.putParcelableArrayListExtra(LocationMonitorService.DATA, targets);
             context.startService(intentForService);
         }
     }

@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.service;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -19,6 +19,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -28,6 +29,10 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.romio.locationtest.MainActivity;
+import com.romio.locationtest.R;
+import com.romio.locationtest.TargetArea;
+import com.romio.locationtest.Utils;
 
 import java.util.ArrayList;
 
@@ -35,12 +40,15 @@ import java.util.ArrayList;
  * Created by roman on 1/10/17.
  */
 
-public class LocationIntentService extends Service {
+public class LocationAreaMonitorService extends Service {
 
+
+
+    public static final String OUT_OF_AREA = "com.romio.locationtest.location.service.out_of_area";
     public static final String DATA = "com.romio.locationtest.location.service.data";
 
-    private static final String TAG = LocationIntentService.class.getSimpleName();
-    private static final String SERVICE_NAME = LocationIntentService.class.getName();
+    private static final String TAG = LocationAreaMonitorService.class.getSimpleName();
+    private static final String SERVICE_NAME = LocationAreaMonitorService.class.getName();
     private static final String CURRENT_AREA_LATITUDE = "com.romio.locationtest.location.current.latItude";
     private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
     private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
@@ -56,20 +64,6 @@ public class LocationIntentService extends Service {
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
-
-    enum Movement {
-        ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
-
-        private String name;
-
-        Movement(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
 
     @Nullable
     @Override
@@ -123,7 +117,6 @@ public class LocationIntentService extends Service {
     }
 
     private void onHandleIntent(Intent intent) {
-        targets = intent.getParcelableArrayListExtra(DATA);
         buildApiClient();
     }
 
@@ -155,7 +148,6 @@ public class LocationIntentService extends Service {
         public void onLocationChanged(Location location) {
             if (location != null) {
                 Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
-                Toast.makeText(LocationIntentService.this, "Location updated", Toast.LENGTH_SHORT).show();
                 processLocationUpdate(location);
 
                 shutdown();
@@ -172,51 +164,23 @@ public class LocationIntentService extends Service {
     };
 
     private void processLocationUpdate(Location location) {
-        if (targets == null) {
-            Log.d(TAG, "No target areas specified");
+        TargetArea lastArea = retrieveOldArea();
+        TargetArea newTargetArea = getCurrentArea(location);
+
+        if (lastArea != null && newTargetArea != null && lastArea.equals(newTargetArea)) {
+            notifyMovementInArea(lastArea, location);
 
         } else {
-            TargetArea lastArea = retrieveOldArea();
-            TargetArea newTargetArea = getCurrentArea(location);
-            String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
-            Log.d(TAG, "Current area: " + area);
-
-            if (lastArea == null && newTargetArea != null) {
-                notifyUserChangePosition(newTargetArea, LocationIntentService.Movement.ENTER_AREA);
-            }
-
-            if (lastArea != null && newTargetArea == null) {
-                notifyUserChangePosition(lastArea, LocationIntentService.Movement.LEAVE_AREA);
-            }
-
-            if (lastArea != null && newTargetArea != null && !lastArea.equals(newTargetArea)) {
-                notifyUserChangePosition(lastArea, newTargetArea);
-            }
-
-            saveCurrentArea(newTargetArea);
+            Intent intent = new Intent();
+            intent.setAction(OUT_OF_AREA);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         }
     }
 
-    private void saveCurrentArea(TargetArea newTargetArea) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (newTargetArea == null) {
-            sharedPreferences
-                    .edit()
-                    .remove(CURRENT_AREA_LATITUDE)
-                    .remove(CURRENT_AREA_LONGITUDE)
-                    .remove(CURRENT_AREA_RADIUS)
-                    .remove(CURRENT_AREA_NAME)
-                    .commit();
-
-        } else {
-            sharedPreferences
-                    .edit()
-                    .putFloat(CURRENT_AREA_LATITUDE, (float) newTargetArea.getAreaCenter().latitude)
-                    .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getAreaCenter().longitude)
-                    .putInt(CURRENT_AREA_RADIUS, newTargetArea.getRadius())
-                    .putString(CURRENT_AREA_NAME, newTargetArea.getAreaName())
-                    .commit();
-        }
+    private void notifyMovementInArea(TargetArea lastArea, Location location) {
+        String title = "Moving inside area " + lastArea.getAreaName();
+        String message = "Location: latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude();
+        notifyUser(message, title);
     }
 
     private TargetArea retrieveOldArea() {
@@ -233,18 +197,14 @@ public class LocationIntentService extends Service {
         return new TargetArea(name, new LatLng(latitude, longitude), radius);
     }
 
-    private void notifyUserChangePosition(TargetArea currentArea, TargetArea newTargetArea) {
-        String message = "Areas changed from " + currentArea.getAreaName() + " to " + newTargetArea.getAreaName();
-        String title = "Areas changed";
+    private TargetArea getCurrentArea(Location location) {
+        for (TargetArea targetArea : targets) {
+            if (Utils.isInside(targetArea, location)) {
+                return targetArea;
+            }
+        }
 
-        notifyUser(message, title);
-    }
-
-    private void notifyUserChangePosition(TargetArea area, @NonNull LocationIntentService.Movement enterArea) {
-        String message = enterArea.getName() + " " + area.getAreaName();
-        String title = "Area status changed";
-
-        notifyUser(message, title);
+        return null;
     }
 
     private void notifyUser(String message, String title) {
@@ -270,16 +230,6 @@ public class LocationIntentService extends Service {
         }
     }
 
-    private TargetArea getCurrentArea(Location location) {
-        for (TargetArea targetArea : targets) {
-            if (Utils.isInside(targetArea, location)) {
-                return targetArea;
-            }
-        }
-
-        return null;
-    }
-
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = new LocationRequest();
         locationRequest.setInterval(getResources().getInteger(R.integer.time_interval));
@@ -292,8 +242,8 @@ public class LocationIntentService extends Service {
     private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Toast.makeText(LocationIntentService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
-            LocationIntentService.this.shutdown();
+            Toast.makeText(LocationAreaMonitorService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
+            LocationAreaMonitorService.this.shutdown();
         }
     };
 
@@ -306,12 +256,12 @@ public class LocationIntentService extends Service {
 
         @Override
         public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            LocationIntentService.this.startLocationUpdates();
+            LocationAreaMonitorService.this.startLocationUpdates();
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-            Toast.makeText(LocationIntentService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
+            Toast.makeText(LocationAreaMonitorService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
         }
     };
 

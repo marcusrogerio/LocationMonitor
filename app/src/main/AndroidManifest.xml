@@ -25,7 +25,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".LocationIntentService" />
+        <service android:name=".service.LocationMonitorService" />
+        <service android:name=".service.LocationAreaMonitorService"/>
 
         <receiver
             android:name=".LocationAlarmReceiver"
