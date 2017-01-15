@@ -26,7 +26,6 @@
         </activity>
 
         <service android:name=".service.LocationMonitorService" />
-        <service android:name=".service.AreaMonitorService"/>
 
         <receiver
             android:name=".AlarmReceiver"
