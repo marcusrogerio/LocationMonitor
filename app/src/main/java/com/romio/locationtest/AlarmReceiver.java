@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 
-import com.romio.locationtest.service.AreaMonitorService;
 import com.romio.locationtest.service.LocationMonitorService;
 
 import java.util.ArrayList;
@@ -18,7 +17,6 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     public static final int REQUEST_CODE = 101;
     public static final String START_LOCATION_MONITOR = "com.romio.locationtest.service.monitor.location";
-    public static final String START_AREA_MONITOR = "com.romio.locationtest.service.monitor.area";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -29,12 +27,6 @@ public class AlarmReceiver extends BroadcastReceiver {
 
                     Intent intentForService = new Intent(context, LocationMonitorService.class);
                     intentForService.putParcelableArrayListExtra(LocationMonitorService.DATA, targets);
-                    context.startService(intentForService);
-                }
-                break;
-
-                case START_AREA_MONITOR: {
-                    Intent intentForService = new Intent(context, AreaMonitorService.class);
                     context.startService(intentForService);
                 }
                 break;

@@ -19,7 +19,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -35,9 +34,10 @@ import com.romio.locationtest.TargetArea;
 import com.romio.locationtest.Utils;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
- * Created by roman on 1/10/17.
+ * Created by roman on 1/10/17
  */
 
 public class LocationMonitorService extends Service {
@@ -50,6 +50,7 @@ public class LocationMonitorService extends Service {
     private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
     private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
     private static final String CURRENT_AREA_NAME = "com.romio.locationtest.location.current.name";
+    private static final String TIME_INSIDE_AREA_UPDATE = "com.romio.locationtest.location.area.inside.time";
 
     private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
     private static final int MAX_NUMBER_OF_FAILED_LOCATION_UPDATES = 5;
@@ -201,15 +202,36 @@ public class LocationMonitorService extends Service {
             saveCurrentArea(newTargetArea);
 
             if (newTargetArea != null) {
-                notifyUserIsInArea();
+                notifyUserIsInArea(newTargetArea, location);
             }
         }
     }
 
-    private void notifyUserIsInArea() {
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
-        Intent intent = new Intent(AreaMonitorService.IN_AREA);
-        localBroadcastManager.sendBroadcast(intent);
+    private void notifyUserIsInArea(TargetArea targetArea, Location location) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        long currentMoment = new Date().getTime();
+
+        if (preferences.contains(TIME_INSIDE_AREA_UPDATE)) {
+            long lastUpdate = preferences.getLong(TIME_INSIDE_AREA_UPDATE, currentMoment);
+            long areaMonitorInterval = getResources().getInteger(R.integer.area_monitor_time_interval) * 1000;
+
+            if (currentMoment - lastUpdate >= areaMonitorInterval) {
+                notifyUserInAreaUpdate(targetArea, location);
+                preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
+            }
+
+        } else {
+            notifyUserInAreaUpdate(targetArea, location);
+
+            preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
+        }
+    }
+
+    private void notifyUserInAreaUpdate(TargetArea targetArea, Location location) {
+        String title = "Transmition in Area";
+        String message = "Area " + targetArea.getAreaName() + ". Latitude: " + location.getLatitude() + "    Longitude: " + location.getLongitude();
+
+        notifyUser(message, title);
     }
 
     private void saveCurrentArea(TargetArea newTargetArea) {

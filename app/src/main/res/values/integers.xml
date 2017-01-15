@@ -13,8 +13,8 @@
     <integer name="location_monitor_time_offset">3000</integer>
 
     <!--for area monitor-->
-    <!--in milliseconds-->
-    <integer name="area_monitor_time_interval">10000</integer>
-    <integer name="area_monitor_time_offset">3000</integer>
+    <!--in seconds-->
+    <integer name="area_monitor_time_interval">10</integer>
+    <integer name="area_monitor_time_offset">3</integer>
 
 </resources>

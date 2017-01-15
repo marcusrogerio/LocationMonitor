@@ -3,14 +3,10 @@ package com.romio.locationtest;
 import android.app.AlarmManager;
 import android.app.Application;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.support.v4.content.LocalBroadcastManager;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -20,7 +16,6 @@ import com.romio.locationtest.data.DBManager;
 import com.romio.locationtest.data.DataBaseHelper;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
-import com.romio.locationtest.service.AreaMonitorService;
 import com.romio.locationtest.service.LocationMonitorService;
 
 import java.sql.SQLException;
@@ -30,7 +25,7 @@ import java.util.List;
 import io.fabric.sdk.android.Fabric;
 
 /**
- * Created by roman on 1/9/17.
+ * Created by roman on 1/9/17
  */
 
 public class LocationMonitorApp extends Application {
@@ -42,8 +37,7 @@ public class LocationMonitorApp extends Application {
 
     private int locationMonitorOffset = 3000;
     private int locationMonitorInterval = 10000;
-    private int areaMonitorOffset = 3000;
-    private int areaMonitorInterval = 10000;
+
 
     @Override
     public void onCreate() {
@@ -54,11 +48,6 @@ public class LocationMonitorApp extends Application {
 
         locationMonitorOffset = getResources().getInteger(R.integer.location_monitor_time_offset);
         locationMonitorInterval = getResources().getInteger(R.integer.location_monitor_time_interval);
-
-        areaMonitorOffset = getResources().getInteger(R.integer.area_monitor_time_offset);
-        areaMonitorInterval = getResources().getInteger(R.integer.area_monitor_time_interval);
-
-        prepareAreaEventReceiver();
     }
 
     public void releaseDBManager() {
@@ -98,11 +87,6 @@ public class LocationMonitorApp extends Application {
         return sharedPreferences.getBoolean(LOCATION_MONITOR_ALARM, false);
     }
 
-    public boolean isAreaMonitorAlarmSet() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return sharedPreferences.getBoolean(AREA_MONITOR_ALARM, false);
-    }
-
     public ArrayList<TargetArea> readTargets() {
         DBManager dbManager = getDBManager();
         try {
@@ -115,38 +99,10 @@ public class LocationMonitorApp extends Application {
         }
     }
 
-    private void startAreaService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = prepareAreaMonitorPendingIntent();
-        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + areaMonitorOffset, areaMonitorInterval, pendingIntent);
-        saveAreaMonitorAlarmWasSet(true);
-    }
-
-    private void stopAreaService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = prepareAreaMonitorPendingIntent();
-        alarmManager.cancel(pendingIntent);
-        saveAreaMonitorAlarmWasSet(false);
-    }
-
-    private void prepareAreaEventReceiver() {
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(AreaMonitorService.OUT_OF_AREA);
-        intentFilter.addAction(AreaMonitorService.IN_AREA);
-        LocalBroadcastManager.getInstance(this).registerReceiver(areaEventReceiver, intentFilter);
-    }
-
     private PendingIntent prepareLocationMonitorPendingIntent() {
         Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
         intent.setAction(AlarmReceiver.START_LOCATION_MONITOR);
         intent.putParcelableArrayListExtra(LocationMonitorService.DATA, readTargets());
-
-        return PendingIntent.getBroadcast(this, AlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    private PendingIntent prepareAreaMonitorPendingIntent() {
-        Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
-        intent.setAction(AlarmReceiver.START_AREA_MONITOR);
 
         return PendingIntent.getBroadcast(this, AlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
@@ -158,33 +114,4 @@ public class LocationMonitorApp extends Application {
                 .putBoolean(LOCATION_MONITOR_ALARM, isSet)
                 .commit();
     }
-
-    private void saveAreaMonitorAlarmWasSet(boolean isSet) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences
-                .edit()
-                .putBoolean(AREA_MONITOR_ALARM, isSet)
-                .commit();
-    }
-
-    private BroadcastReceiver areaEventReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (!TextUtils.isEmpty(intent.getAction())) {
-                switch (intent.getAction()) {
-                    case AreaMonitorService.IN_AREA: {
-                        if (!isAreaMonitorAlarmSet()) {
-                            startAreaService();
-                        }
-                    } break;
-
-                    case AreaMonitorService.OUT_OF_AREA: {
-                        if (isAreaMonitorAlarmSet()) {
-                            stopAreaService();
-                        }
-                    } break;
-                }
-            }
-        }
-    };
 }

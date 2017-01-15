@@ -3,7 +3,7 @@ package com.romio.locationtest;
 import android.location.Location;
 
 /**
- * Created by roman on 1/14/17.
+ * Created by roman on 1/14/17
  */
 
 public class Utils {

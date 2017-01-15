@@ -251,6 +251,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         progressBar.setVisibility(View.INVISIBLE);
 
         map = googleMap;
+        map.getUiSettings().setMapToolbarEnabled(false);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
             moveToMyLocation();
