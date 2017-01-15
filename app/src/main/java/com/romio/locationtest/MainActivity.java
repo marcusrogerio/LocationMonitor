@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
     private static int counter = 0;
-    private int zoom = 15;
+    private int zoom = 13;
     private MenuItem itemPlayStop;
 
     private ArrayList<TargetArea> targets = new ArrayList<>();

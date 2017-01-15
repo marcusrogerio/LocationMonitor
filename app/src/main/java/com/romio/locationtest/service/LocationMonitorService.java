@@ -161,7 +161,7 @@ public class LocationMonitorService extends Service {
         public void onLocationChanged(Location location) {
             if (location != null) {
                 Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
-                Toast.makeText(LocationMonitorService.this, "Location updated", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(LocationMonitorService.this, "Location updated", Toast.LENGTH_SHORT).show();
                 processLocationUpdate(location);
 
                 shutdown();
@@ -228,8 +228,8 @@ public class LocationMonitorService extends Service {
     }
 
     private void notifyUserInAreaUpdate(TargetArea targetArea, Location location) {
-        String title = "Transmition in Area";
-        String message = "Area " + targetArea.getAreaName() + ". Latitude: " + location.getLatitude() + "    Longitude: " + location.getLongitude();
+        String title = "Presence in Area";
+        String message = targetArea.getAreaName() + ". Latitude: " + location.getLatitude() + "    Longitude: " + location.getLongitude();
 
         notifyUser(message, title);
     }
