@@ -1,18 +1,14 @@
 package com.romio.locationtest;
 
 import android.Manifest;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -35,14 +31,11 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.romio.locationtest.data.DBManager;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
-import com.romio.locationtest.service.LocationMonitorService;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 
 import butterknife.BindColor;
 import butterknife.BindInt;
@@ -52,7 +45,7 @@ import butterknife.ButterKnife;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String ALARM = "com.romio.locationtest.alarm.clock";
+
     private GoogleMap map;
 
     private SupportMapFragment mapFragment;
@@ -84,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        tryToReadTargets();
+        targets = ((LocationMonitorApp)getApplication()).readTargets();
 
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
         progressBar.setVisibility(View.VISIBLE);
@@ -95,18 +88,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         verifyPermissions();
     }
 
-    private void tryToReadTargets() {
-        DBManager dbManager = ((LocationMonitorApp)getApplication()).getDBManager();
-        try {
-            List<TargetAreaDto> targetAreaDtoList = dbManager.getAreaDao().queryForAll();
-            targets = TargetAreaMapper.mapFromDto(targetAreaDtoList);
-
-        } catch (SQLException e) {
-            Log.e(TAG, "Error reading targets from DB", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     protected void onDestroy() {
         if (map != null) {
@@ -114,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         targets = new ArrayList<>();
-        ((LocationMonitorApp)getApplication()).reseaseDBManager();
+        ((LocationMonitorApp)getApplication()).releaseDBManager();
 
         super.onDestroy();
     }
@@ -144,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             } return true;
 
             case R.id.item_clear_all: {
-                if (isAlarmSet()) {
+                if (((LocationMonitorApp)getApplication()).isLocationMonitorAlarmSet()) {
                     Toast.makeText(MainActivity.this, "Stop service before cleaning target areas", Toast.LENGTH_SHORT).show();
                 } else {
                     deleteAllTargetAreas();
@@ -181,7 +162,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         checkLocationEnabled();
     }
 
-
     private void deleteAllTargetAreas() {
         targets.clear();
 
@@ -198,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void updateMenuItemState() {
-        if (isAlarmSet()) {
+        if ( ((LocationMonitorApp)getApplication()).isLocationMonitorAlarmSet() ) {
             itemPlayStop.setIcon(R.drawable.ic_stop_24dp);
         } else {
             itemPlayStop.setIcon(R.drawable.ic_play_24dp);
@@ -206,41 +186,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void toggleLocationService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = preparePendingIntent();
-
-        if (!isAlarmSet()) {
-            alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 5000, pendingIntent);
-
-            saveAlarmWasSet(true);
-            Toast.makeText(this, "Start listening for updates", Toast.LENGTH_SHORT).show();
-
-        } else {
-            alarmManager.cancel(pendingIntent);
-            saveAlarmWasSet(false);
-            Toast.makeText(this, "Stop listening for updates", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private PendingIntent preparePendingIntent() {
-        Intent intent = new Intent(getApplicationContext(), LocationAlarmReceiver.class);
-        intent.setAction(LocationAlarmReceiver.ACTION);
-        intent.putParcelableArrayListExtra(LocationMonitorService.DATA, targets);
-
-        return PendingIntent.getBroadcast(this, LocationAlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    private boolean isAlarmSet() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return sharedPreferences.getBoolean(ALARM, false);
-    }
-
-    private void saveAlarmWasSet(boolean isSet) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences
-                .edit()
-                .putBoolean(ALARM, isSet)
-                .commit();
+        ((LocationMonitorApp)getApplication()).toggleLocationMonitorService(this);
     }
 
     private boolean verifyGooglePlayServices() {
@@ -368,7 +314,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             ((LocationMonitorApp)getApplication()).getDBManager().getAreaDao().createOrUpdate(targetAreaDto);
 
         } catch (SQLException e) {
-            Log.e(TAG, "Erro dding area to DB", e);
+            Log.e(TAG, "Error adding area to DB", e);
             throw new RuntimeException(e);
         }
     }

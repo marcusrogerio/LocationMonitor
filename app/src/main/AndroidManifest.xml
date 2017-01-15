@@ -26,10 +26,10 @@
         </activity>
 
         <service android:name=".service.LocationMonitorService" />
-        <service android:name=".service.LocationAreaMonitorService"/>
+        <service android:name=".service.AreaMonitorService"/>
 
         <receiver
-            android:name=".LocationAlarmReceiver"
+            android:name=".AlarmReceiver"
             android:process=":remote" />
 
         <meta-data

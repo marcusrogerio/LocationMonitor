@@ -19,6 +19,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -198,7 +199,17 @@ public class LocationMonitorService extends Service {
             }
 
             saveCurrentArea(newTargetArea);
+
+            if (newTargetArea != null) {
+                notifyUserIsInArea();
+            }
         }
+    }
+
+    private void notifyUserIsInArea() {
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        Intent intent = new Intent(AreaMonitorService.IN_AREA);
+        localBroadcastManager.sendBroadcast(intent);
     }
 
     private void saveCurrentArea(TargetArea newTargetArea) {

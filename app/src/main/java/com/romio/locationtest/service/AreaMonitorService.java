@@ -40,15 +40,13 @@ import java.util.ArrayList;
  * Created by roman on 1/10/17.
  */
 
-public class LocationAreaMonitorService extends Service {
+public class AreaMonitorService extends Service {
 
-
-
+    public static final String IN_AREA = "com.romio.locationtest.location.service.in_area";
     public static final String OUT_OF_AREA = "com.romio.locationtest.location.service.out_of_area";
-    public static final String DATA = "com.romio.locationtest.location.service.data";
 
-    private static final String TAG = LocationAreaMonitorService.class.getSimpleName();
-    private static final String SERVICE_NAME = LocationAreaMonitorService.class.getName();
+    private static final String TAG = AreaMonitorService.class.getSimpleName();
+    private static final String SERVICE_NAME = AreaMonitorService.class.getName();
     private static final String CURRENT_AREA_LATITUDE = "com.romio.locationtest.location.current.latItude";
     private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
     private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
@@ -60,7 +58,6 @@ public class LocationAreaMonitorService extends Service {
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
     private GoogleApiClient googleApiClient;
-    private ArrayList<TargetArea> targets;
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
@@ -165,9 +162,8 @@ public class LocationAreaMonitorService extends Service {
 
     private void processLocationUpdate(Location location) {
         TargetArea lastArea = retrieveOldArea();
-        TargetArea newTargetArea = getCurrentArea(location);
 
-        if (lastArea != null && newTargetArea != null && lastArea.equals(newTargetArea)) {
+        if (lastArea != null) {
             notifyMovementInArea(lastArea, location);
 
         } else {
@@ -197,16 +193,6 @@ public class LocationAreaMonitorService extends Service {
         return new TargetArea(name, new LatLng(latitude, longitude), radius);
     }
 
-    private TargetArea getCurrentArea(Location location) {
-        for (TargetArea targetArea : targets) {
-            if (Utils.isInside(targetArea, location)) {
-                return targetArea;
-            }
-        }
-
-        return null;
-    }
-
     private void notifyUser(String message, String title) {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
@@ -216,7 +202,6 @@ public class LocationAreaMonitorService extends Service {
 
         Intent resultIntent = new Intent(this, MainActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        resultIntent.putParcelableArrayListExtra(DATA, targets);
 
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(resultPendingIntent);
@@ -242,8 +227,8 @@ public class LocationAreaMonitorService extends Service {
     private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Toast.makeText(LocationAreaMonitorService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
-            LocationAreaMonitorService.this.shutdown();
+            Toast.makeText(AreaMonitorService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
+            AreaMonitorService.this.shutdown();
         }
     };
 
@@ -256,12 +241,12 @@ public class LocationAreaMonitorService extends Service {
 
         @Override
         public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            LocationAreaMonitorService.this.startLocationUpdates();
+            AreaMonitorService.this.startLocationUpdates();
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-            Toast.makeText(LocationAreaMonitorService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
+            Toast.makeText(AreaMonitorService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
         }
     };
 
