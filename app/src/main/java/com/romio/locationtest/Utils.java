@@ -1,6 +1,8 @@
 package com.romio.locationtest;
 
+import android.content.Context;
 import android.location.Location;
+import android.location.LocationManager;
 
 /**
  * Created by roman on 1/14/17
@@ -28,5 +30,12 @@ public class Utils {
                 location.getLongitude());
 
         return distance <= targetArea.getRadius();
+    }
+
+
+    public static boolean isLocationEnabled(Context context) {
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) |
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
     }
 }

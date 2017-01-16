@@ -221,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void checkLocationEnabled() {
-        if (!isLocationEnabled()) {
+        if (!Utils.isLocationEnabled(this)) {
             Intent enableLocationIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivityForResult(enableLocationIntent, REQUEST_ENABLE_LOCATION);
         }
@@ -229,16 +229,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         onLocationEnabled();
     }
 
-    private boolean isLocationEnabled() {
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) |
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_LOCATION) {
-            if (isLocationEnabled()) {
+            if (Utils.isLocationEnabled(this)) {
                 onLocationEnabled();
             }
         } else {

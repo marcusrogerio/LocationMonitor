@@ -146,12 +146,16 @@ public class LocationMonitorService extends Service {
     }
 
     private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                Utils.isLocationEnabled(this)) {
+
             LocationRequest locationRequest = createLocationRequest();
             LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, locationListener);
 
             numberOfFailedUpdates = 0;
+
         } else {
+            Log.w(TAG, "Location permission wasn't granted or location wasn't enabled");
             shutdown();
         }
     }
