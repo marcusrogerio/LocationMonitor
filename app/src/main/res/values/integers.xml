@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--in meters-->
-    <integer name="radius">500</integer>
+    <integer name="radius">1000</integer>
 
     <!--for location listener-->
     <integer name="time_interval">3000</integer>
@@ -9,11 +9,11 @@
 
     <!--for location monitor-->
     <!--in milliseconds-->
-    <integer name="location_monitor_time_interval">10000</integer>
+    <integer name="location_monitor_time_interval">20000</integer>
     <integer name="location_monitor_time_offset">3000</integer>
 
     <!--for area monitor-->
     <!--in seconds-->
-    <integer name="area_monitor_time_interval">30</integer>
+    <integer name="area_monitor_time_interval">300</integer>
 
 </resources>

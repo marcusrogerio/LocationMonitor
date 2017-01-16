@@ -7,7 +7,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -233,7 +236,7 @@ public class LocationMonitorService extends Service {
 
     private void notifyUserInAreaUpdate(TargetArea targetArea, Location location) {
         String title = "Presence in Area";
-        String message = targetArea.getAreaName() + ". Latitude: " + location.getLatitude() + "    Longitude: " + location.getLongitude();
+        String message = targetArea.getAreaName() + ".\n Latitude: " + location.getLatitude() + "\nLongitude: " + location.getLongitude();
 
         notifyUser(message, title);
     }
@@ -289,10 +292,13 @@ public class LocationMonitorService extends Service {
     }
 
     private void notifyUser(String message, String title) {
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_add_location_18dp)
                         .setContentTitle(title)
+                        .setLights(Color.BLUE, 500, 500)
+                        .setSound(alarmSound)
                         .setContentText(message);
 
         Intent resultIntent = new Intent(this, MainActivity.class);
