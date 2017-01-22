@@ -42,9 +42,7 @@ public class LocationMonitorApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (!BuildConfig.DEBUG) {
-            Fabric.with(this, new Crashlytics());
-        }
+        Fabric.with(this, new Crashlytics());
 
         locationMonitorOffset = getResources().getInteger(R.integer.location_monitor_time_offset);
         locationMonitorInterval = getResources().getInteger(R.integer.location_monitor_time_interval);
@@ -70,7 +68,7 @@ public class LocationMonitorApp extends Application {
         PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
 
         if (!isLocationMonitorAlarmSet()) {
-            alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
 
             saveLocationMonitorAlarmWasSet(true);
             Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
