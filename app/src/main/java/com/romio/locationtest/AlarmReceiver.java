@@ -23,6 +23,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (!TextUtils.isEmpty(intent.getAction())) {
             switch (intent.getAction()) {
                 case START_LOCATION_MONITOR: {
+                    WakeLocker.acquire(context);
+
                     ArrayList<TargetArea> targets = intent.getParcelableArrayListExtra(LocationMonitorService.DATA);
 
                     Intent intentForService = new Intent(context, LocationMonitorService.class);

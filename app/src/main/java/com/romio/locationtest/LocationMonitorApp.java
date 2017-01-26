@@ -30,7 +30,7 @@ import io.fabric.sdk.android.Fabric;
 
 public class LocationMonitorApp extends Application {
 
-    private static final String TAG = LocationMonitorApp.class.getSimpleName();
+    public static final String TAG = LocationMonitorApp.class.getSimpleName();
     private DataBaseHelper databaseHelper = null;
     private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
     private static final String AREA_MONITOR_ALARM = "com.romio.locationtest.alarm.area_monitor";

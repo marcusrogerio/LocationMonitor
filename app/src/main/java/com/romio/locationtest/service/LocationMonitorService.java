@@ -35,6 +35,7 @@ import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.TargetArea;
 import com.romio.locationtest.Utils;
+import com.romio.locationtest.WakeLocker;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -168,7 +169,7 @@ public class LocationMonitorService extends Service {
         public void onLocationChanged(Location location) {
             if (location != null) {
                 Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
-//                Toast.makeText(LocationMonitorService.this, "Location updated", Toast.LENGTH_SHORT).show();
+
                 processLocationUpdate(location);
 
                 shutdown();
@@ -365,5 +366,6 @@ public class LocationMonitorService extends Service {
     private void shutdown() {
         stopListeningLocationUpdates();
         stopSelf(startId);
+        WakeLocker.release();
     }
 }
