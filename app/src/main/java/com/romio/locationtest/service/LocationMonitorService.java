@@ -31,11 +31,11 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.romio.locationtest.AlarmReceiver;
 import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.TargetArea;
 import com.romio.locationtest.Utils;
-import com.romio.locationtest.WakeLocker;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -66,6 +66,7 @@ public class LocationMonitorService extends Service {
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
+    private Intent intent;
 
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
@@ -133,6 +134,7 @@ public class LocationMonitorService extends Service {
     }
 
     private void onHandleIntent(Intent intent) {
+        this.intent = intent;
         targets = intent.getParcelableArrayListExtra(DATA);
         buildApiClient();
     }
@@ -165,11 +167,11 @@ public class LocationMonitorService extends Service {
     }
 
     private LocationListener locationListener = new LocationListener() {
+
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
                 Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
-
                 processLocationUpdate(location);
 
                 shutdown();
@@ -366,6 +368,6 @@ public class LocationMonitorService extends Service {
     private void shutdown() {
         stopListeningLocationUpdates();
         stopSelf(startId);
-        WakeLocker.release();
+        AlarmReceiver.completeWakefulIntent(intent);
     }
 }
