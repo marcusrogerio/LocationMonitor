@@ -36,6 +36,7 @@ import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.TargetArea;
 import com.romio.locationtest.Utils;
+import com.romio.locationtest.WakeLocker;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -124,6 +125,7 @@ public class LocationMonitorService extends Service {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        WakeLocker.acquire(this);
         onStart(intent, startId);
         return mRedelivery ? START_REDELIVER_INTENT : START_NOT_STICKY;
     }
@@ -367,7 +369,8 @@ public class LocationMonitorService extends Service {
 
     private void shutdown() {
         stopListeningLocationUpdates();
-        stopSelf(startId);
+        WakeLocker.release();
         AlarmReceiver.completeWakefulIntent(intent);
+        stopSelf(startId);
     }
 }
