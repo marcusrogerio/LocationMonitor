@@ -7,8 +7,6 @@ import android.text.TextUtils;
 
 import com.romio.locationtest.service.LocationMonitorService;
 
-import java.util.ArrayList;
-
 /**
  * Created by roman on 1/11/17
  */
@@ -23,10 +21,7 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
         if (!TextUtils.isEmpty(intent.getAction())) {
             switch (intent.getAction()) {
                 case START_LOCATION_MONITOR: {
-                    ArrayList<TargetArea> targets = intent.getParcelableArrayListExtra(LocationMonitorService.DATA);
-
                     Intent intentForService = new Intent(context, LocationMonitorService.class);
-                    intentForService.putParcelableArrayListExtra(LocationMonitorService.DATA, targets);
                     startWakefulService(context, intentForService);
                 }
                 break;

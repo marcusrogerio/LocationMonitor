@@ -100,7 +100,6 @@ public class LocationMonitorApp extends Application {
     private PendingIntent prepareLocationMonitorPendingIntent() {
         Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
         intent.setAction(AlarmReceiver.START_LOCATION_MONITOR);
-        intent.putParcelableArrayListExtra(LocationMonitorService.DATA, readTargets());
 
         return PendingIntent.getBroadcast(this, AlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }

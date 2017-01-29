@@ -32,6 +32,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.romio.locationtest.AlarmReceiver;
+import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.TargetArea;
@@ -137,7 +138,7 @@ public class LocationMonitorService extends Service {
 
     private void onHandleIntent(Intent intent) {
         this.intent = intent;
-        targets = intent.getParcelableArrayListExtra(DATA);
+        targets = ((LocationMonitorApp)getApplication()).readTargets();
         buildApiClient();
     }
 
@@ -173,7 +174,6 @@ public class LocationMonitorService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
-                Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
                 processLocationUpdate(location);
 
                 shutdown();
@@ -368,6 +368,9 @@ public class LocationMonitorService extends Service {
     };
 
     private void shutdown() {
+        targets = new ArrayList<>();
+        ((LocationMonitorApp)getApplication()).releaseDBManager();
+
         stopListeningLocationUpdates();
         WakeLocker.release();
         AlarmReceiver.completeWakefulIntent(intent);
