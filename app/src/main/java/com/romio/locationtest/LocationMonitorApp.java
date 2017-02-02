@@ -11,12 +11,19 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.firebase.jobdispatcher.Driver;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
+import com.firebase.jobdispatcher.Lifetime;
+import com.firebase.jobdispatcher.Trigger;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 import com.romio.locationtest.data.DBManager;
 import com.romio.locationtest.data.DataBaseHelper;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
 import com.romio.locationtest.service.LocationMonitorService;
+import com.romio.locationtest.service.LocationUpdateJobService;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,6 +40,8 @@ public class LocationMonitorApp extends Application {
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
     private DataBaseHelper databaseHelper = null;
     private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
+    private static final String SERVICE_IS_RUNNING = "com.romio.locationtest.service.is.running";
+    private static final String SERVICE_TAG = LocationUpdateJobService.class.getSimpleName();
     private static final String AREA_MONITOR_ALARM = "com.romio.locationtest.alarm.area_monitor";
 
     private int locationMonitorOffset = 3000;
@@ -64,20 +73,40 @@ public class LocationMonitorApp extends Application {
     }
 
     public void toggleLocationMonitorService(MainActivity mainActivity) {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
+        Driver driver = new GooglePlayDriver(getApplicationContext());
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
-        if (!isLocationMonitorAlarmSet()) {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
-
-            saveLocationMonitorAlarmWasSet(true);
-            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
+        if (isServiceRunning()) {
+            dispatcher.cancel(SERVICE_TAG);
 
         } else {
-            alarmManager.cancel(pendingIntent);
-            saveLocationMonitorAlarmWasSet(false);
-            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
+            Job myJob = dispatcher.newJobBuilder()
+                    .setService(LocationUpdateJobService.class)
+                    .setRecurring(true)
+                    .setTrigger(Trigger.executionWindow(30, 30 + 30))
+                    .setReplaceCurrent(true)
+                    .setLifetime(Lifetime.FOREVER)
+                    .setTag(SERVICE_TAG)
+                    .build();
+
+            dispatcher.mustSchedule(myJob);
         }
+
+
+//        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+//        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
+//
+//        if (!isLocationMonitorAlarmSet()) {
+//            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
+//
+//            saveLocationMonitorAlarmWasSet(true);
+//            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
+//
+//        } else {
+//            alarmManager.cancel(pendingIntent);
+//            saveLocationMonitorAlarmWasSet(false);
+//            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
+//        }
     }
 
     public boolean isLocationMonitorAlarmSet() {
@@ -101,7 +130,7 @@ public class LocationMonitorApp extends Application {
         Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
         intent.setAction(AlarmReceiver.START_LOCATION_MONITOR);
 
-        return PendingIntent.getBroadcast(this, AlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        return PendingIntent.getBroadcast(this, AlarmReceiver.REQUEST_CODE, intent, 0);
     }
 
     private void saveLocationMonitorAlarmWasSet(boolean isSet) {
@@ -110,5 +139,18 @@ public class LocationMonitorApp extends Application {
                 .edit()
                 .putBoolean(LOCATION_MONITOR_ALARM, isSet)
                 .commit();
+    }
+
+    private void toggleSeriveIsRunning(boolean isRunning) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences
+                .edit()
+                .putBoolean(SERVICE_IS_RUNNING, isRunning)
+                .commit();
+    }
+
+    private boolean isServiceRunning() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return sharedPreferences.getBoolean(SERVICE_IS_RUNNING, false);
     }
 }

@@ -14,8 +14,9 @@ public abstract class WakeLocker {
         if (wakeLock != null) wakeLock.release();
 
         PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, LocationMonitorApp.TAG);
-        wakeLock.acquire();
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LocationMonitorApp.TAG);
+        wakeLock.setReferenceCounted(false);
+        wakeLock.acquire(60*1000);
     }
 
     public static void release() {

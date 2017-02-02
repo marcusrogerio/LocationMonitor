@@ -51,6 +51,7 @@ dependencies {
 //    compile 'com.google.android.gms:play-services:10.0.1'
     compile 'com.google.android.gms:play-services-location:10.0.1'
     compile 'com.google.android.gms:play-services-maps:10.0.1'
+    compile 'com.firebase:firebase-jobdispatcher:0.5.2'
     compile 'org.jetbrains:annotations-java5:15.0'
     compile('com.crashlytics.sdk.android:crashlytics:2.6.5@aar') {
         transitive = true;

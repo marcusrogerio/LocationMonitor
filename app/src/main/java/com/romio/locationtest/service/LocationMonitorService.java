@@ -108,6 +108,7 @@ public class LocationMonitorService extends Service {
 
     @Override
     public void onCreate() {
+        WakeLocker.acquire(getApplicationContext());
         super.onCreate();
         HandlerThread thread = new HandlerThread("IntentService[" + SERVICE_NAME + "]");
         thread.start();
@@ -126,7 +127,6 @@ public class LocationMonitorService extends Service {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
-        WakeLocker.acquire(this);
         onStart(intent, startId);
         return mRedelivery ? START_REDELIVER_INTENT : START_NOT_STICKY;
     }
@@ -173,8 +173,9 @@ public class LocationMonitorService extends Service {
 
         @Override
         public void onLocationChanged(Location location) {
+            notifyUser("(location == null) = " + (location == null), "LocationListener");
             if (location != null) {
-                processLocationUpdate(location);
+//                processLocationUpdate(location);
 
                 shutdown();
 
