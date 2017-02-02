@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             } return true;
 
             case R.id.item_clear_all: {
-                if (((LocationMonitorApp)getApplication()).isLocationMonitorAlarmSet()) {
+                if (((LocationMonitorApp)getApplication()).isServiceRunning()) {
                     Toast.makeText(MainActivity.this, "Stop service before cleaning target areas", Toast.LENGTH_SHORT).show();
                 } else {
                     deleteAllTargetAreas();
@@ -178,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void updateMenuItemState() {
-        if ( ((LocationMonitorApp)getApplication()).isLocationMonitorAlarmSet() ) {
+        if ( ((LocationMonitorApp)getApplication()).isServiceRunning() ) {
             itemPlayStop.setIcon(R.drawable.ic_stop_24dp);
         } else {
             itemPlayStop.setIcon(R.drawable.ic_play_24dp);
@@ -186,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void toggleLocationService() {
-        ((LocationMonitorApp)getApplication()).toggleLocationMonitorService(this);
+        ((LocationMonitorApp)getApplication()).toggleLocationMonitorService();
     }
 
     private boolean verifyGooglePlayServices() {
