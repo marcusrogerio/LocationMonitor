@@ -176,7 +176,7 @@ public class LocationMonitorService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
-                notifyUser("onLocationChanged", LocationMonitorService.class.getSimpleName());
+                notifyUser("Location Changed", LocationMonitorService.class.getSimpleName());
 //                processLocationUpdate(location);
 
                 shutdown();
