@@ -79,7 +79,7 @@ public class LocationMonitorApp extends Application {
             Job myJob = dispatcher.newJobBuilder()
                     .setService(LocationUpdateJobService.class)
                     .setRecurring(true)
-                    .setTrigger(Trigger.executionWindow(intervalInSeconds, intervalInSeconds + intervalInSeconds))
+                    .setTrigger(Trigger.executionWindow(intervalInSeconds, intervalInSeconds + 10))
                     .setReplaceCurrent(true)
                     .setLifetime(Lifetime.FOREVER)
                     .setTag(SERVICE_TAG)
