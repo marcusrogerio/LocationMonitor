@@ -312,7 +312,7 @@ public class LocationMonitorService extends Service {
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         resultIntent.putParcelableArrayListExtra(DATA, targets);
 
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
         builder.setContentIntent(resultPendingIntent);
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(notificationId, builder.build());
