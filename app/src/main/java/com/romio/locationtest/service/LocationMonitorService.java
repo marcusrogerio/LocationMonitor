@@ -49,6 +49,7 @@ import java.util.Date;
 public class LocationMonitorService extends Service {
 
     public static final String DATA = "com.romio.locationtest.location.service.data";
+    public static final int REQUEST_CODE = 103;
 
     private static final String TAG = LocationMonitorService.class.getSimpleName();
     private static final String SERVICE_NAME = LocationMonitorService.class.getName();
@@ -312,7 +313,7 @@ public class LocationMonitorService extends Service {
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         resultIntent.putParcelableArrayListExtra(DATA, targets);
 
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, 0);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(resultPendingIntent);
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(notificationId, builder.build());
@@ -375,7 +376,7 @@ public class LocationMonitorService extends Service {
 
         stopListeningLocationUpdates();
         WakeLocker.release();
-        AlarmReceiver.completeWakefulIntent(intent);
+//        AlarmReceiver.completeWakefulIntent(intent);
         stopSelf(startId);
     }
 }
