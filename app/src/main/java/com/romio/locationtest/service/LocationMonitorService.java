@@ -109,6 +109,7 @@ public class LocationMonitorService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        WakeLocker.acquire(this);
         HandlerThread thread = new HandlerThread("IntentService[" + SERVICE_NAME + "]");
         thread.start();
 
@@ -174,7 +175,8 @@ public class LocationMonitorService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
-                processLocationUpdate(location);
+                notifyUser("onLocationChanged", LocationMonitorService.class.getSimpleName());
+//                processLocationUpdate(location);
 
                 shutdown();
 
