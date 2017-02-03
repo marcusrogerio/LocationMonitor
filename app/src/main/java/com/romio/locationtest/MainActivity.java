@@ -1,18 +1,14 @@
 package com.romio.locationtest;
 
 import android.Manifest;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -35,7 +31,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.TargetAreaMapper;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import butterknife.BindColor;
@@ -46,7 +45,7 @@ import butterknife.ButterKnife;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String ALARM = "com.romio.locationtest.alarm.clock";
+
     private GoogleMap map;
 
     private SupportMapFragment mapFragment;
@@ -56,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
     private static int counter = 0;
-    private int zoom = 15;
+    private int zoom = 13;
     private MenuItem itemPlayStop;
 
     private ArrayList<TargetArea> targets = new ArrayList<>();
@@ -78,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        tryToReadTargets(getIntent());
+        targets = ((LocationMonitorApp)getApplication()).readTargets();
 
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
         progressBar.setVisibility(View.VISIBLE);
@@ -90,24 +89,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
-        tryToReadTargets(intent);
-        super.onNewIntent(intent);
-    }
-
-    private void tryToReadTargets(Intent intent) {
-        if (intent.getParcelableArrayListExtra(LocationIntentService.DATA) != null) {
-            targets = getIntent().getParcelableArrayListExtra(LocationIntentService.DATA);
-        }
-    }
-
-    @Override
     protected void onDestroy() {
         if (map != null) {
             map.clear();
         }
 
         targets = new ArrayList<>();
+        ((LocationMonitorApp)getApplication()).releaseDBManager();
+
         super.onDestroy();
     }
 
@@ -125,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.item_launch:
+            case R.id.item_launch:{
                 if (canStartService) {
                     toggleLocationService();
                 } else {
@@ -133,7 +122,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
 
                 updateMenuItemState();
-                return true;
+            } return true;
+
+            case R.id.item_clear_all: {
+                if (((LocationMonitorApp)getApplication()).isLocationMonitorAlarmSet()) {
+                    Toast.makeText(MainActivity.this, "Stop service before cleaning target areas", Toast.LENGTH_SHORT).show();
+                } else {
+                    deleteAllTargetAreas();
+                }
+            } return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -164,13 +162,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         checkLocationEnabled();
     }
 
+    private void deleteAllTargetAreas() {
+        targets.clear();
+
+        if (map != null) {
+            map.clear();
+        }
+
+        ((LocationMonitorApp)getApplication()).getDBManager().clearAll();
+    }
+
     private void onLocationEnabled() {
         mapFragment.getMapAsync(this);
         canStartService = true;
     }
 
     private void updateMenuItemState() {
-        if (isAlarmSet()) {
+        if ( ((LocationMonitorApp)getApplication()).isLocationMonitorAlarmSet() ) {
             itemPlayStop.setIcon(R.drawable.ic_stop_24dp);
         } else {
             itemPlayStop.setIcon(R.drawable.ic_play_24dp);
@@ -178,41 +186,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void toggleLocationService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = preparePendingIntent();
-
-        if (!isAlarmSet()) {
-            alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 5000, pendingIntent);
-
-            saveAlarmWasSet(true);
-            Toast.makeText(this, "Start listening for updates", Toast.LENGTH_SHORT).show();
-
-        } else {
-            alarmManager.cancel(pendingIntent);
-            saveAlarmWasSet(false);
-            Toast.makeText(this, "Stop listening for updates", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private PendingIntent preparePendingIntent() {
-        Intent intent = new Intent(getApplicationContext(), LocationAlarmReceiver.class);
-        intent.setAction(LocationAlarmReceiver.ACTION);
-        intent.putParcelableArrayListExtra(LocationIntentService.DATA, targets);
-
-        return PendingIntent.getBroadcast(this, LocationAlarmReceiver.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    private boolean isAlarmSet() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return sharedPreferences.getBoolean(ALARM, false);
-    }
-
-    private void saveAlarmWasSet(boolean isSet) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences
-                .edit()
-                .putBoolean(ALARM, isSet)
-                .commit();
+        ((LocationMonitorApp)getApplication()).toggleLocationMonitorService(this);
     }
 
     private boolean verifyGooglePlayServices() {
@@ -247,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void checkLocationEnabled() {
-        if (!isLocationEnabled()) {
+        if (!Utils.isLocationEnabled(this)) {
             Intent enableLocationIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivityForResult(enableLocationIntent, REQUEST_ENABLE_LOCATION);
         }
@@ -255,16 +229,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         onLocationEnabled();
     }
 
-    private boolean isLocationEnabled() {
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) |
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_LOCATION) {
-            if (isLocationEnabled()) {
+            if (Utils.isLocationEnabled(this)) {
                 onLocationEnabled();
             }
         } else {
@@ -277,13 +245,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         progressBar.setVisibility(View.INVISIBLE);
 
         map = googleMap;
+        map.getUiSettings().setMapToolbarEnabled(false);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
             moveToMyLocation();
         }
 
         if (targets != null) {
-            addAllTargets();
+            addAllTargetsToMap();
         }
 
         initMapListeners(googleMap);
@@ -298,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void addAllTargets() {
+    private void addAllTargetsToMap() {
         for (TargetArea targetArea : targets) {
             map.addMarker(new MarkerOptions()
                     .position(targetArea.getAreaCenter())
@@ -328,26 +297,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .strokeColor(boundColor)
                     .fillColor(areaFillColor));
 
+            TargetArea targetArea = new TargetArea(areaName, latLng, radius);
+            targets.add(targetArea);
+            addTargetAreaToDB(targetArea);
+        }
+    }
 
-            targets.add(new TargetArea(areaName, latLng, radius));
+    private void addTargetAreaToDB(@NonNull TargetArea targetArea) {
+        TargetAreaDto targetAreaDto = TargetAreaMapper.map(targetArea);
+        try {
+            ((LocationMonitorApp)getApplication()).getDBManager().getAreaDao().createOrUpdate(targetAreaDto);
+
+        } catch (SQLException e) {
+            Log.e(TAG, "Error adding area to DB", e);
+            throw new RuntimeException(e);
         }
     }
 
     private boolean isInsideExistingArea(LatLng newTargetCenter) {
-//        for (LatLng latLng : targets) {
-//            double startLatitude = latLng.latitude - radius;
-//            double endLatitude = latLng.latitude + radius;
-//
-//            double startLongitude = latLng.longitude - radius;
-//            double endLongitude = latLng.longitude + radius;
-//
-//            if ( newTargetCenter.latitude + radius >= startLatitude &&
-//                    newTargetCenter.latitude - radius <= endLatitude &&
-//                    newTargetCenter.longitude + radius >= startLongitude &&
-//                    newTargetCenter.longitude - radius <= endLongitude) {
-//                return true;
-//            }
-//        }
+        for (TargetArea targetArea : targets) {
+            double distance = Utils.distance(newTargetCenter.latitude, newTargetCenter.longitude, targetArea.getAreaCenter().latitude, targetArea.getAreaCenter().longitude);
+
+            if (distance <= radius + targetArea.getRadius()) {
+                return true;
+            }
+        }
 
         return false;
     }

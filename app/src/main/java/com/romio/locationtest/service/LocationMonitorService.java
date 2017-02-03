@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.service;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -7,7 +7,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -28,23 +31,33 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.romio.locationtest.AlarmReceiver;
+import com.romio.locationtest.LocationMonitorApp;
+import com.romio.locationtest.MainActivity;
+import com.romio.locationtest.R;
+import com.romio.locationtest.TargetArea;
+import com.romio.locationtest.Utils;
+import com.romio.locationtest.WakeLocker;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
- * Created by roman on 1/10/17.
+ * Created by roman on 1/10/17
  */
 
-public class LocationIntentService extends Service {
+public class LocationMonitorService extends Service {
 
     public static final String DATA = "com.romio.locationtest.location.service.data";
+    public static final int REQUEST_CODE = 103;
 
-    private static final String TAG = LocationIntentService.class.getSimpleName();
-    private static final String SERVICE_NAME = LocationIntentService.class.getName();
+    private static final String TAG = LocationMonitorService.class.getSimpleName();
+    private static final String SERVICE_NAME = LocationMonitorService.class.getName();
     private static final String CURRENT_AREA_LATITUDE = "com.romio.locationtest.location.current.latItude";
     private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
     private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
     private static final String CURRENT_AREA_NAME = "com.romio.locationtest.location.current.name";
+    private static final String TIME_INSIDE_AREA_UPDATE = "com.romio.locationtest.location.area.inside.time";
 
     private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
     private static final int MAX_NUMBER_OF_FAILED_LOCATION_UPDATES = 5;
@@ -56,6 +69,7 @@ public class LocationIntentService extends Service {
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
+    private Intent intent;
 
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
@@ -96,6 +110,7 @@ public class LocationIntentService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        WakeLocker.acquire(this);
         HandlerThread thread = new HandlerThread("IntentService[" + SERVICE_NAME + "]");
         thread.start();
 
@@ -113,6 +128,7 @@ public class LocationIntentService extends Service {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        WakeLocker.acquire(this);
         onStart(intent, startId);
         return mRedelivery ? START_REDELIVER_INTENT : START_NOT_STICKY;
     }
@@ -123,7 +139,8 @@ public class LocationIntentService extends Service {
     }
 
     private void onHandleIntent(Intent intent) {
-        targets = intent.getParcelableArrayListExtra(DATA);
+        this.intent = intent;
+        targets = ((LocationMonitorApp)getApplication()).readTargets();
         buildApiClient();
     }
 
@@ -140,23 +157,27 @@ public class LocationIntentService extends Service {
     }
 
     private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                Utils.isLocationEnabled(this)) {
+
             LocationRequest locationRequest = createLocationRequest();
             LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, locationListener);
 
             numberOfFailedUpdates = 0;
+
         } else {
+            Log.w(TAG, "Location permission wasn't granted or location wasn't enabled");
             shutdown();
         }
     }
 
     private LocationListener locationListener = new LocationListener() {
+
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
-                Log.d(TAG, "Location updated: Latitude = " + location.getLatitude() + "   longitude = " + location.getLongitude());
-                Toast.makeText(LocationIntentService.this, "Location updated", Toast.LENGTH_SHORT).show();
-                processLocationUpdate(location);
+                notifyUser("onLocationChanged", LocationMonitorService.class.getSimpleName());
+//                processLocationUpdate(location);
 
                 shutdown();
 
@@ -182,11 +203,11 @@ public class LocationIntentService extends Service {
             Log.d(TAG, "Current area: " + area);
 
             if (lastArea == null && newTargetArea != null) {
-                notifyUserChangePosition(newTargetArea, LocationIntentService.Movement.ENTER_AREA);
+                notifyUserChangePosition(newTargetArea, LocationMonitorService.Movement.ENTER_AREA);
             }
 
             if (lastArea != null && newTargetArea == null) {
-                notifyUserChangePosition(lastArea, LocationIntentService.Movement.LEAVE_AREA);
+                notifyUserChangePosition(lastArea, LocationMonitorService.Movement.LEAVE_AREA);
             }
 
             if (lastArea != null && newTargetArea != null && !lastArea.equals(newTargetArea)) {
@@ -194,7 +215,38 @@ public class LocationIntentService extends Service {
             }
 
             saveCurrentArea(newTargetArea);
+
+            if (newTargetArea != null) {
+                notifyUserIsInArea(newTargetArea, location);
+            }
         }
+    }
+
+    private void notifyUserIsInArea(TargetArea targetArea, Location location) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        long currentMoment = new Date().getTime();
+
+        if (preferences.contains(TIME_INSIDE_AREA_UPDATE)) {
+            long lastUpdate = preferences.getLong(TIME_INSIDE_AREA_UPDATE, currentMoment);
+            long areaMonitorInterval = getResources().getInteger(R.integer.area_monitor_time_interval) * 1000;
+
+            if (currentMoment - lastUpdate >= areaMonitorInterval) {
+                notifyUserInAreaUpdate(targetArea, location);
+                preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
+            }
+
+        } else {
+            notifyUserInAreaUpdate(targetArea, location);
+
+            preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
+        }
+    }
+
+    private void notifyUserInAreaUpdate(TargetArea targetArea, Location location) {
+        String title = "Presence in Area";
+        String message = targetArea.getAreaName() + ".\n Latitude: " + location.getLatitude() + "\nLongitude: " + location.getLongitude();
+
+        notifyUser(message, title);
     }
 
     private void saveCurrentArea(TargetArea newTargetArea) {
@@ -240,7 +292,7 @@ public class LocationIntentService extends Service {
         notifyUser(message, title);
     }
 
-    private void notifyUserChangePosition(TargetArea area, @NonNull LocationIntentService.Movement enterArea) {
+    private void notifyUserChangePosition(TargetArea area, @NonNull LocationMonitorService.Movement enterArea) {
         String message = enterArea.getName() + " " + area.getAreaName();
         String title = "Area status changed";
 
@@ -248,10 +300,13 @@ public class LocationIntentService extends Service {
     }
 
     private void notifyUser(String message, String title) {
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_add_location_18dp)
                         .setContentTitle(title)
+                        .setLights(Color.BLUE, 500, 500)
+                        .setSound(alarmSound)
                         .setContentText(message);
 
         Intent resultIntent = new Intent(this, MainActivity.class);
@@ -272,34 +327,12 @@ public class LocationIntentService extends Service {
 
     private TargetArea getCurrentArea(Location location) {
         for (TargetArea targetArea : targets) {
-            if (isInside(targetArea, location)) {
+            if (Utils.isInside(targetArea, location)) {
                 return targetArea;
             }
         }
 
         return null;
-    }
-
-    private boolean isInside(TargetArea targetArea, Location location) {
-        double distance = distance(
-                targetArea.getAreaCenter().latitude,
-                targetArea.getAreaCenter().longitude,
-                location.getLatitude(),
-                location.getLongitude());
-
-        return distance <= targetArea.getRadius();
-    }
-
-    public static double distance(
-            double lat1, double lng1, double lat2, double lng2) {
-        int earthRadius = 6371; // average radius of the earth in km
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lng2 - lng1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        double hipotenuse = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return earthRadius * hipotenuse * 1000;
     }
 
     private LocationRequest createLocationRequest() {
@@ -314,8 +347,8 @@ public class LocationIntentService extends Service {
     private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Toast.makeText(LocationIntentService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
-            LocationIntentService.this.shutdown();
+            Toast.makeText(LocationMonitorService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
+            LocationMonitorService.this.shutdown();
         }
     };
 
@@ -328,17 +361,22 @@ public class LocationIntentService extends Service {
 
         @Override
         public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            LocationIntentService.this.startLocationUpdates();
+            LocationMonitorService.this.startLocationUpdates();
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-            Toast.makeText(LocationIntentService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
+            Toast.makeText(LocationMonitorService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
         }
     };
 
     private void shutdown() {
+        targets = new ArrayList<>();
+        ((LocationMonitorApp)getApplication()).releaseDBManager();
+
         stopListeningLocationUpdates();
+        WakeLocker.release();
+//        AlarmReceiver.completeWakefulIntent(intent);
         stopSelf(startId);
     }
 }

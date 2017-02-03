@@ -7,7 +7,7 @@ import android.text.TextUtils;
 import com.google.android.gms.maps.model.LatLng;
 
 /**
- * Created by roman on 1/9/17.
+ * Created by roman on 1/9/17
  */
 
 public class TargetArea implements Parcelable {

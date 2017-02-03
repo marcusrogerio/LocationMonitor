@@ -22,8 +22,8 @@ android {
         applicationId "com.romio.locationtest"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        versionCode 14
+        versionName "1.12"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -44,6 +44,9 @@ dependencies {
 
     compile 'com.jakewharton:butterknife:8.4.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
+
+    compile 'com.j256.ormlite:ormlite-core:4.48' // orm
+    compile 'com.j256.ormlite:ormlite-android:4.48' // orm
 
 //    compile 'com.google.android.gms:play-services:10.0.1'
     compile 'com.google.android.gms:play-services-location:10.0.1'
