@@ -22,7 +22,8 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
             switch (intent.getAction()) {
                 case START_LOCATION_MONITOR: {
                     Intent intentForService = new Intent(context, LocationMonitorService.class);
-                    startWakefulService(context, intentForService);
+                    LocationMonitorService.launch(context);
+//                    startWakefulService(context, intentForService);
                 }
                 break;
             }

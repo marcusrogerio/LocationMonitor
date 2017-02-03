@@ -3,14 +3,17 @@ package com.romio.locationtest.service;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -70,6 +73,64 @@ public class LocationMonitorService extends Service {
     private int numberOfFailedUpdates;
     private Intent intent;
 
+
+
+
+
+
+    //---------------------------------------------------------
+    //---------------------------------------------------------
+
+    private final IBinder mBinder = new LocalBinder();
+    private static LocationMonitorService mService;
+    private static boolean mBound;
+
+    public static void launch(Context context) {
+        WakeLocker.acquire(context);
+        Intent intent = new Intent(context, LocationMonitorService.class);
+        context.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    public static void unbind() {
+        mService.unbindService(mConnection);
+    }
+
+    private static ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            LocalBinder binder = (LocalBinder) service;
+            mService = binder.getService();
+            mService.buildApiClient();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+
+    public class LocalBinder extends Binder {
+        LocationMonitorService getService() {
+            // Return this instance of LocalService so clients can call public methods
+            return LocationMonitorService.this;
+        }
+    }
+
+    //---------------------------------------------------------
+    //---------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
 
@@ -87,7 +148,7 @@ public class LocationMonitorService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     private final class ServiceHandler extends Handler {
@@ -126,7 +187,7 @@ public class LocationMonitorService extends Service {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
-        WakeLocker.acquire(this);
+
         onStart(intent, startId);
         return mRedelivery ? START_REDELIVER_INTENT : START_NOT_STICKY;
     }
@@ -141,6 +202,13 @@ public class LocationMonitorService extends Service {
         targets = ((LocationMonitorApp)getApplication()).readTargets();
         buildApiClient();
     }
+
+
+
+
+
+
+
 
     private void buildApiClient() {
         if (googleApiClient == null) {
@@ -174,7 +242,8 @@ public class LocationMonitorService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
-                processLocationUpdate(location);
+                notifyUser("onLocationChanged", "LocationListener");
+//                processLocationUpdate(location);
 
                 shutdown();
 
@@ -373,7 +442,9 @@ public class LocationMonitorService extends Service {
 
         stopListeningLocationUpdates();
         WakeLocker.release();
+
         AlarmReceiver.completeWakefulIntent(intent);
-        stopSelf(startId);
+        unbind();
+//        stopSelf(startId);
     }
 }
