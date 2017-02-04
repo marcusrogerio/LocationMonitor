@@ -17,10 +17,17 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleInstance"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".SplashActivity"
+            android:launchMode="singleInstance"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -28,19 +35,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.LocationMonitorService" />
-
-        <service
-            android:exported="false"
-            android:name=".service.LocationUpdateJobService">
-            <intent-filter>
-                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
-            </intent-filter>
-        </service>
-
-        <receiver
-            android:name=".AlarmReceiver"
-            android:process=":remote" />
+        <service android:name=".service.GeofenceTransitionsIntentService" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

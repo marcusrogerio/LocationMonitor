@@ -1,19 +1,21 @@
 package com.romio.locationtest;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -21,8 +23,9 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.ResolvingResultCallbacks;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -31,10 +34,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.data.TargetAreaMapper;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 
 import butterknife.BindColor;
@@ -45,18 +45,20 @@ import butterknife.ButterKnife;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String SERVICE_IS_RUNNING = "com.romio.locationtest.service.is.running";
 
-    private GoogleMap map;
-
-    private SupportMapFragment mapFragment;
-    private ProgressBar progressBar;
-
-    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    private static final int GEOFENCE_REQUEST_CODE = 106;
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
     private static int counter = 0;
     private int zoom = 13;
+
+    private LocationMonitorApp app;
+    private GeofenceManager geofenceManager;
+    private SupportMapFragment mapFragment;
+    private ProgressBar progressBar;
     private MenuItem itemPlayStop;
+    private GoogleMap map;
 
     private ArrayList<TargetArea> targets = new ArrayList<>();
 
@@ -71,33 +73,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     boolean canStartService = false;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
-
-        targets = ((LocationMonitorApp)getApplication()).readTargets();
-
-        progressBar = (ProgressBar) findViewById(R.id.pb_progress);
-        progressBar.setVisibility(View.VISIBLE);
-
-        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-
-        verifyGooglePlayServices();
-        verifyPermissions();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (map != null) {
-            map.clear();
-        }
-
-        targets = new ArrayList<>();
-        ((LocationMonitorApp)getApplication()).releaseDBManager();
-
-        super.onDestroy();
+    public static void startActivity(Activity activity) {
+        Intent intent = new Intent(activity, MainActivity.class);
+        activity.startActivity(intent);
     }
 
     @Override
@@ -114,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.item_launch:{
+            case R.id.item_launch: {
                 if (canStartService) {
                     toggleLocationService();
                 } else {
@@ -122,15 +100,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
 
                 updateMenuItemState();
-            } return true;
+            }
+            return true;
 
             case R.id.item_clear_all: {
-                if (((LocationMonitorApp)getApplication()).isServiceRunning()) {
+                if (isGeofencing()) {
                     Toast.makeText(MainActivity.this, "Stop service before cleaning target areas", Toast.LENGTH_SHORT).show();
                 } else {
                     deleteAllTargetAreas();
                 }
-            } return true;
+            }
+            return true;
 
             default:
                 return super.onOptionsItemSelected(item);
@@ -158,6 +138,66 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        progressBar.setVisibility(View.INVISIBLE);
+
+        map = googleMap;
+        map.getUiSettings().setMapToolbarEnabled(false);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            googleMap.setMyLocationEnabled(true);
+            moveToMyLocation();
+        }
+
+        if (targets != null) {
+            addAllTargetsToMap();
+        }
+
+        initMapListeners(googleMap);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
+
+        app = (LocationMonitorApp) getApplication();
+        geofenceManager = app.getGeofenceManager();
+
+        targets = geofenceManager.readTargets();
+
+        progressBar = (ProgressBar) findViewById(R.id.pb_progress);
+        progressBar.setVisibility(View.VISIBLE);
+
+        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+
+        verifyPermissions();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (map != null) {
+            map.clear();
+        }
+
+        targets = new ArrayList<>();
+        app.releaseDBManager();
+
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_ENABLE_LOCATION) {
+            if (Utils.isLocationEnabled(this)) {
+                onLocationEnabled();
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
     private void permissionsGranted() {
         checkLocationEnabled();
     }
@@ -169,7 +209,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             map.clear();
         }
 
-        ((LocationMonitorApp)getApplication()).getDBManager().clearAll();
+        geofenceManager.clearAll();
     }
 
     private void onLocationEnabled() {
@@ -178,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void updateMenuItemState() {
-        if ( ((LocationMonitorApp)getApplication()).isServiceRunning() ) {
+        if (isGeofencing()) {
             itemPlayStop.setIcon(R.drawable.ic_stop_24dp);
         } else {
             itemPlayStop.setIcon(R.drawable.ic_play_24dp);
@@ -186,23 +226,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void toggleLocationService() {
-        ((LocationMonitorApp)getApplication()).toggleLocationMonitorService();
-    }
-
-    private boolean verifyGooglePlayServices() {
-        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (apiAvailability.isUserResolvableError(resultCode)) {
-                apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
-
-            } else {
-                Log.i(TAG, "This device is not supported.");
-                finish();
-            }
-            return false;
-        }
-        return true;
+        toggleLocationMonitorService();
     }
 
     private void verifyPermissions() {
@@ -227,35 +251,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         onLocationEnabled();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_ENABLE_LOCATION) {
-            if (Utils.isLocationEnabled(this)) {
-                onLocationEnabled();
-            }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data);
-        }
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        progressBar.setVisibility(View.INVISIBLE);
-
-        map = googleMap;
-        map.getUiSettings().setMapToolbarEnabled(false);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            googleMap.setMyLocationEnabled(true);
-            moveToMyLocation();
-        }
-
-        if (targets != null) {
-            addAllTargetsToMap();
-        }
-
-        initMapListeners(googleMap);
     }
 
     private void initMapListeners(GoogleMap googleMap) {
@@ -299,19 +294,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             TargetArea targetArea = new TargetArea(areaName, latLng, radius);
             targets.add(targetArea);
-            addTargetAreaToDB(targetArea);
+
+
+            addGeofence(targetArea);
         }
     }
 
-    private void addTargetAreaToDB(@NonNull TargetArea targetArea) {
-        TargetAreaDto targetAreaDto = TargetAreaMapper.map(targetArea);
-        try {
-            ((LocationMonitorApp)getApplication()).getDBManager().getAreaDao().createOrUpdate(targetAreaDto);
-
-        } catch (SQLException e) {
-            Log.e(TAG, "Error adding area to DB", e);
-            throw new RuntimeException(e);
-        }
+    private void addGeofence(@NonNull TargetArea targetArea) {
+        geofenceManager.addTarget(targetArea);
     }
 
     private boolean isInsideExistingArea(LatLng newTargetCenter) {
@@ -343,4 +333,73 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     }
+
+    private void toggleLocationMonitorService() {
+        if (isGeofencing()) {
+            stopGeofencing();
+
+        } else {
+            startGeofencing();
+        }
+    }
+
+    /**
+     * Utils code
+     */
+
+    private void startGeofencing() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(getApplicationContext(), "Location permission required", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (app.getGeofenceManager().containsGeofences()) {
+            LocationServices.GeofencingApi.addGeofences(
+                    app.getGoogleApiClient(),
+                    app.getGeofenceManager().getGeofencingRequest(),
+                    app.getGeofenceManager().getGeofencePendingIntent()
+            ).setResultCallback(getGeofenceAPIResultCallback());
+
+            setGeofensingStatus(true);
+        }
+    }
+
+    private void stopGeofencing() {
+        LocationServices.GeofencingApi.removeGeofences(
+                app.getGoogleApiClient(),
+                app.getGeofenceManager().getGeofencePendingIntent()
+        ).setResultCallback(getGeofenceAPIResultCallback());
+
+        setGeofensingStatus(false);
+    }
+
+    // TODO: 2/4/17 improve
+    @NonNull
+    private ResolvingResultCallbacks<Status> getGeofenceAPIResultCallback() {
+        return new ResolvingResultCallbacks<Status>(MainActivity.this, GEOFENCE_REQUEST_CODE) {
+            @Override
+            public void onSuccess(@NonNull Status status) {
+                Toast.makeText(MainActivity.this, "Geofence added/removed successfully " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onUnresolvableFailure(@NonNull Status status) {
+                Toast.makeText(MainActivity.this, "Failed to add/remove geofence(s) " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
+            }
+        };
+    }
+
+    public boolean isGeofencing() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return sharedPreferences.getBoolean(SERVICE_IS_RUNNING, false);
+    }
+
+    private void setGeofensingStatus(boolean isRunning) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences
+                .edit()
+                .putBoolean(SERVICE_IS_RUNNING, isRunning)
+                .commit();
+    }
+
 }
