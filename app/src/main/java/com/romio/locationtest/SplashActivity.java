@@ -23,13 +23,14 @@ public class SplashActivity extends AppCompatActivity {
     private GoogleApiClient googleApiClient;
 
     @Override
-    public void onCreate(Bundle savedInstanceState, PersistableBundle persistentState) {
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
         verifyGooglePlayServices(this);
         buildAndConnectApiClient();
     }
 
-    public boolean verifyGooglePlayServices(AppCompatActivity activity) {
+    private boolean verifyGooglePlayServices(AppCompatActivity activity) {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
         int resultCode = apiAvailability.isGooglePlayServicesAvailable(activity);
         if (resultCode != ConnectionResult.SUCCESS) {

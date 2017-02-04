@@ -10,11 +10,12 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 
+import com.google.android.gms.location.GeofencingEvent;
 import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
 
 /**
- * Created by roman on 2/4/17.
+ * Created by roman on 2/4/17
  */
 
 public class GeofenceTransitionsIntentService extends IntentService {
@@ -29,7 +30,12 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-
+        GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
+        if (geofencingEvent.hasError()) {
+            notifyUser("error", "GeofenceTransitionsIntentService");
+        } else {
+            notifyUser("success", "GeofenceTransitionsIntentService");
+        }
     }
 
     private void notifyUser(String message, String title) {
