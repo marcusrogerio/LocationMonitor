@@ -4,6 +4,6 @@
     <integer name="radius">1000</integer>
 
     <!--in milliseconds-->
-    <integer name="area_monitor_time_interval">30000</integer>
+    <integer name="loitering_delay">10000</integer>
 
 </resources>

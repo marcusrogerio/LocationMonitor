@@ -1,7 +1,6 @@
 package com.romio.locationtest;
 
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;

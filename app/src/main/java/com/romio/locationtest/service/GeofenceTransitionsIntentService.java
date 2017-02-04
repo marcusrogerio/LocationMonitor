@@ -10,9 +10,10 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 
+import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
-import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
+import com.romio.locationtest.SplashActivity;
 
 /**
  * Created by roman on 2/4/17
@@ -32,9 +33,22 @@ public class GeofenceTransitionsIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
-            notifyUser("error", "GeofenceTransitionsIntentService");
+            notifyUser("Error code: " + geofencingEvent.getErrorCode(), "Location Monitor Error");
+
         } else {
-            notifyUser("success", "GeofenceTransitionsIntentService");
+            switch (geofencingEvent.getGeofenceTransition()) {
+                case Geofence.GEOFENCE_TRANSITION_ENTER:
+                case Geofence.GEOFENCE_TRANSITION_DWELL: {
+                    String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
+                    notifyUser("Entered " + areaName, "Location Monitor");
+                }
+                break;
+                case Geofence.GEOFENCE_TRANSITION_EXIT: {
+                    String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
+                    notifyUser("Exited " + areaName, "Location Monitor");
+                }
+                break;
+            }
         }
     }
 
@@ -48,7 +62,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
                         .setSound(alarmSound)
                         .setContentText(message);
 
-        Intent resultIntent = new Intent(this, MainActivity.class);
+        Intent resultIntent = new Intent(this, SplashActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);

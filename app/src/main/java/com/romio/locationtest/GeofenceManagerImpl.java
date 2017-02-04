@@ -24,7 +24,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
 
     public static final int PENDING_INTENT_REQUEST_CODE = 177;
     private static final String TAG = GeofenceManagerImpl.class.getSimpleName();
-    private int locationAreaMonitorInterval = 60000; // default value
+    private int loiteringDelay = 10000; // default value
     private List<Geofence> geofenceList = new ArrayList<>();
     private DBManager dbManager;
     private Context context;
@@ -33,7 +33,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
         this.context = context;
         this.dbManager = dbManager;
 
-        locationAreaMonitorInterval = context.getResources().getInteger(R.integer.area_monitor_time_interval);
+        loiteringDelay = context.getResources().getInteger(R.integer.loitering_delay);
     }
 
     @Override
@@ -106,7 +106,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
                 .setRequestId(areaId)
                 .setCircularRegion(latitude, longitude, radius)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setLoiteringDelay(locationAreaMonitorInterval)
+                .setLoiteringDelay(loiteringDelay)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
                         | Geofence.GEOFENCE_TRANSITION_EXIT
                         | Geofence.GEOFENCE_TRANSITION_DWELL)
