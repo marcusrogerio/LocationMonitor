@@ -31,13 +31,11 @@ import io.fabric.sdk.android.Fabric;
 public class LocationMonitorApp extends Application {
 
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
-    private DataBaseHelper databaseHelper = null;
     private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
-    private static final String AREA_MONITOR_ALARM = "com.romio.locationtest.alarm.area_monitor";
+    private DataBaseHelper databaseHelper = null;
 
     private int locationMonitorOffset = 3000;
     private int locationMonitorInterval = 10000;
-
 
     @Override
     public void onCreate() {
@@ -99,7 +97,6 @@ public class LocationMonitorApp extends Application {
 
     private PendingIntent prepareLocationMonitorPendingIntent() {
         Intent intent = new Intent(getApplicationContext(), LocationMonitorService.class);
-        intent.setAction(AlarmReceiver.START_LOCATION_MONITOR);
 
         return PendingIntent.getService(this, LocationMonitorService.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }

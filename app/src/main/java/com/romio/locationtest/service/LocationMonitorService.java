@@ -31,7 +31,6 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
-import com.romio.locationtest.AlarmReceiver;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
@@ -176,8 +175,7 @@ public class LocationMonitorService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
-                notifyUser("Location Changed", LocationMonitorService.class.getSimpleName());
-//                processLocationUpdate(location);
+                processLocationUpdate(location);
 
                 shutdown();
 
@@ -376,7 +374,6 @@ public class LocationMonitorService extends Service {
 
         stopListeningLocationUpdates();
         WakeLocker.release();
-//        AlarmReceiver.completeWakefulIntent(intent);
         stopSelf(startId);
     }
 }
