@@ -111,7 +111,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
                 .setCircularRegion(latitude, longitude, radius)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setLoiteringDelay(loiteringDelayInMilliseconds)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_EXIT | Geofence.GEOFENCE_TRANSITION_DWELL)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT | Geofence.GEOFENCE_TRANSITION_DWELL)
                 .build());
     }
 }

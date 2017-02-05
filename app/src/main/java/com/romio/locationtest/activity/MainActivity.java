@@ -189,6 +189,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         targets = new ArrayList<>();
         app.releaseDBManager();
 
+        app.getGoogleApiClient().disconnect();
+        app.setGoogleApiClient(null);
+
         super.onDestroy();
     }
 

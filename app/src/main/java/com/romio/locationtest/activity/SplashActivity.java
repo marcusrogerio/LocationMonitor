@@ -27,6 +27,12 @@ public class SplashActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
         verifyGooglePlayServices(this);
         buildAndConnectApiClient();
     }
@@ -59,7 +65,11 @@ public class SplashActivity extends AppCompatActivity {
                     .build();
         }
 
-        googleApiClient.connect();
+        if (!googleApiClient.isConnected()) {
+            googleApiClient.connect();
+        } else {
+            moveToMainActivity();
+        }
     }
 
     private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
@@ -73,7 +83,7 @@ public class SplashActivity extends AppCompatActivity {
 
         @Override
         public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            onAPIClientConnected();
+            moveToMainActivity();
         }
 
         @Override
@@ -82,7 +92,7 @@ public class SplashActivity extends AppCompatActivity {
         }
     };
 
-    private void onAPIClientConnected() {
+    private void moveToMainActivity() {
         LocationMonitorApp app = (LocationMonitorApp) getApplication();
         app.setGoogleApiClient(googleApiClient);
         MainActivity.startActivity(this);
