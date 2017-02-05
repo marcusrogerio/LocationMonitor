@@ -9,9 +9,4 @@
         android:scaleType="centerInside"
         android:src="@drawable/geofencing_splash_image" />
 
-    <!--<ProgressBar-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center"/>-->
-
 </FrameLayout>
