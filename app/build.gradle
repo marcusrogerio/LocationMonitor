@@ -22,8 +22,8 @@ android {
         applicationId "com.romio.locationtest"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 14
-        versionName "1.12"
+        versionCode 15
+        versionName "1.13"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
