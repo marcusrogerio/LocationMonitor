@@ -37,7 +37,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
         } else {
             switch (geofencingEvent.getGeofenceTransition()) {
-                case Geofence.GEOFENCE_TRANSITION_ENTER:
                 case Geofence.GEOFENCE_TRANSITION_DWELL: {
                     String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
                     notifyUser("Entered " + areaName, "Location Monitor");

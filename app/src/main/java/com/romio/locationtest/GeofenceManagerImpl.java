@@ -24,7 +24,8 @@ public class GeofenceManagerImpl implements GeofenceManager {
 
     public static final int PENDING_INTENT_REQUEST_CODE = 177;
     private static final String TAG = GeofenceManagerImpl.class.getSimpleName();
-    private int loiteringDelay = 10000; // default value
+    private int loiteringDelayInMilliseconds;
+    private int notificationResponsivenessInMilliseconds;
     private List<Geofence> geofenceList = new ArrayList<>();
     private DBManager dbManager;
     private Context context;
@@ -33,7 +34,8 @@ public class GeofenceManagerImpl implements GeofenceManager {
         this.context = context;
         this.dbManager = dbManager;
 
-        loiteringDelay = context.getResources().getInteger(R.integer.loitering_delay);
+        loiteringDelayInMilliseconds = context.getResources().getInteger(R.integer.loitering_delay);
+        notificationResponsivenessInMilliseconds = context.getResources().getInteger(R.integer.notification_responsiveness);
     }
 
     @Override
@@ -104,12 +106,11 @@ public class GeofenceManagerImpl implements GeofenceManager {
     private void addTarget(double latitude, double longitude, float radius, String areaId) {
         geofenceList.add(new Geofence.Builder()
                 .setRequestId(areaId)
+                .setNotificationResponsiveness(notificationResponsivenessInMilliseconds)
                 .setCircularRegion(latitude, longitude, radius)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setLoiteringDelay(loiteringDelay)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
-                        | Geofence.GEOFENCE_TRANSITION_EXIT
-                        | Geofence.GEOFENCE_TRANSITION_DWELL)
+                .setLoiteringDelay(loiteringDelayInMilliseconds)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_EXIT | Geofence.GEOFENCE_TRANSITION_DWELL)
                 .build());
     }
 }

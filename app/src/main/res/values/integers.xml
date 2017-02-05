@@ -4,6 +4,8 @@
     <integer name="radius">1000</integer>
 
     <!--in milliseconds-->
-    <integer name="loitering_delay">5000</integer>
+    <integer name="loitering_delay">7000</integer>
+    <integer name="notification_responsiveness">40000</integer>
+
 
 </resources>
