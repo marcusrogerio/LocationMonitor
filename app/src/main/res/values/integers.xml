@@ -4,7 +4,7 @@
     <integer name="radius">1000</integer>
 
     <!--for location listener-->
-    <integer name="time_interval">5000</integer>
+    <integer name="time_interval">3000</integer>
     <integer name="time_interval_fastest">2000</integer>
 
     <!--for location monitor-->

@@ -35,7 +35,7 @@ public class LocationMonitorApp extends Application {
     private DataBaseHelper databaseHelper = null;
 
     private int locationMonitorOffset = 3000;
-    private int locationMonitorInterval = 10000;
+    private int locationMonitorInterval = 120000;
 
     @Override
     public void onCreate() {
