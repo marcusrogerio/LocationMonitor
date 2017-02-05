@@ -1,4 +1,4 @@
-package com.romio.locationtest.service;
+package com.romio.locationtest.geofence;
 
 import android.app.IntentService;
 import android.app.NotificationManager;
@@ -13,7 +13,7 @@ import android.support.v4.app.NotificationCompat;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 import com.romio.locationtest.R;
-import com.romio.locationtest.SplashActivity;
+import com.romio.locationtest.activity.SplashActivity;
 
 /**
  * Created by roman on 2/4/17

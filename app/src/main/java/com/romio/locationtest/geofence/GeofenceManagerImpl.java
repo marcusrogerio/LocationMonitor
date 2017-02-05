@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.geofence;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -7,10 +7,11 @@ import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
+import com.romio.locationtest.R;
+import com.romio.locationtest.TargetArea;
 import com.romio.locationtest.data.DBManager;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
-import com.romio.locationtest.service.GeofenceTransitionsIntentService;
 
 import java.sql.SQLException;
 import java.util.ArrayList;

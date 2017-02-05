@@ -18,12 +18,12 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:launchMode="singleInstance"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".SplashActivity"
+            android:name=".activity.SplashActivity"
             android:launchMode="singleInstance"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
@@ -34,7 +34,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.GeofenceTransitionsIntentService" />
+        <service android:name=".geofence.GeofenceTransitionsIntentService" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

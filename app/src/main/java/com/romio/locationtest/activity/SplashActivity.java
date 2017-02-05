@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.activity;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -10,6 +10,8 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+import com.romio.locationtest.LocationMonitorApp;
+import com.romio.locationtest.R;
 
 /**
  * Created by roman on 2/4/17

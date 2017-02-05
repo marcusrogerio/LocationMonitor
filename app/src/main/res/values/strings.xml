@@ -9,4 +9,6 @@
     <string name="location">Location</string>
     <string name="maps_api_key">AIzaSyCR92NpsvhdDbSiWxRh3IW-DfFfjIPS-2Q</string>
     <string name="launch">Launch</string>
+    <string name="result_success">Geofence(s) %s successfully</string>
+    <string name="result_failed">Failed to %s geofence(s)</string>
 </resources>

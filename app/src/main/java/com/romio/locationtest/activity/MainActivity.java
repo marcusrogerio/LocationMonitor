@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.activity;
 
 import android.Manifest;
 import android.app.Activity;
@@ -34,6 +34,11 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.romio.locationtest.LocationMonitorApp;
+import com.romio.locationtest.R;
+import com.romio.locationtest.TargetArea;
+import com.romio.locationtest.Utils;
+import com.romio.locationtest.geofence.GeofenceManager;
 
 import java.util.ArrayList;
 
@@ -51,7 +56,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
     private static int counter = 0;
-    private int zoom = 13;
 
     private LocationMonitorApp app;
     private GeofenceManager geofenceManager;
@@ -62,16 +66,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private ArrayList<TargetArea> targets = new ArrayList<>();
 
-    @BindInt(R.integer.radius)
-    int radius;
+    private boolean canStartService = false;
 
-    @BindColor(R.color.area_fill_color)
-    int areaFillColor;
-
-    @BindColor(R.color.bound_color)
-    int boundColor;
-
-    boolean canStartService = false;
+    private int zoom;
+    private int radius;
+    private int areaFillColor;
+    private int boundColor;
 
     public static void startActivity(Activity activity) {
         Intent intent = new Intent(activity, MainActivity.class);
@@ -164,6 +164,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         app = (LocationMonitorApp) getApplication();
         geofenceManager = app.getGeofenceManager();
+
+        areaFillColor = ActivityCompat.getColor(this, R.color.area_fill_color);
+        boundColor = ActivityCompat.getColor(this, R.color.bound_color);
+        radius = getResources().getInteger(R.integer.radius);
+        zoom = getResources().getInteger(R.integer.zoom);
 
         targets = geofenceManager.readTargets();
 
@@ -295,7 +300,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             TargetArea targetArea = new TargetArea(areaName, latLng, radius);
             targets.add(targetArea);
 
-
             addGeofence(targetArea);
         }
     }
@@ -358,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     app.getGoogleApiClient(),
                     app.getGeofenceManager().getGeofencingRequest(),
                     app.getGeofenceManager().getGeofencePendingIntent()
-            ).setResultCallback(getGeofenceAPIResultCallback());
+            ).setResultCallback(getGeofenceAPIResultCallback(true));
 
             setGeofensingStatus(true);
         }
@@ -368,23 +372,30 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         LocationServices.GeofencingApi.removeGeofences(
                 app.getGoogleApiClient(),
                 app.getGeofenceManager().getGeofencePendingIntent()
-        ).setResultCallback(getGeofenceAPIResultCallback());
+        ).setResultCallback(getGeofenceAPIResultCallback(false));
 
         setGeofensingStatus(false);
     }
 
-    // TODO: 2/4/17 improve
     @NonNull
-    private ResolvingResultCallbacks<Status> getGeofenceAPIResultCallback() {
+    private ResolvingResultCallbacks<Status> getGeofenceAPIResultCallback(final boolean isStart) {
         return new ResolvingResultCallbacks<Status>(MainActivity.this, GEOFENCE_REQUEST_CODE) {
             @Override
             public void onSuccess(@NonNull Status status) {
-                Toast.makeText(MainActivity.this, "Geofence added/removed successfully " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
+                String message = getResources().getString(R.string.result_success);
+                String action = (isStart) ? "added" : "removed";
+                message = String.format(message, action);
+
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onUnresolvableFailure(@NonNull Status status) {
-                Toast.makeText(MainActivity.this, "Failed to add/remove geofence(s) " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
+                String message = getResources().getString(R.string.result_failed);
+                String action = (isStart) ? "added" : "removed";
+                message = String.format(message, action);
+
+                Toast.makeText(MainActivity.this, message + " Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
             }
         };
     }

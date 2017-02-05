@@ -1,8 +1,9 @@
-package com.romio.locationtest;
+package com.romio.locationtest.geofence;
 
 import android.app.PendingIntent;
 
 import com.google.android.gms.location.GeofencingRequest;
+import com.romio.locationtest.TargetArea;
 
 import java.util.ArrayList;
 

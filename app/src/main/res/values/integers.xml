@@ -5,7 +5,7 @@
 
     <!--in milliseconds-->
     <integer name="loitering_delay">7000</integer>
-    <integer name="notification_responsiveness">40000</integer>
-
+    <integer name="notification_responsiveness">30000</integer>
+    <integer name="zoom">13</integer>
 
 </resources>
