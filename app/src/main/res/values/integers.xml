@@ -9,11 +9,11 @@
 
     <!--for location monitor-->
     <!--in milliseconds-->
-    <integer name="location_monitor_time_interval">180000</integer>
+    <integer name="location_monitor_time_interval">10000</integer>
     <integer name="location_monitor_time_offset">5000</integer>
 
     <!--for area monitor-->
     <!--in seconds-->
-    <integer name="area_monitor_time_interval">300</integer>
+    <integer name="area_monitor_time_interval">100</integer>
 
 </resources>

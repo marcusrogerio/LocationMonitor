@@ -68,7 +68,6 @@ public class LocationMonitorService extends Service {
     private boolean mRedelivery;
     private int startId;
     private int numberOfFailedUpdates;
-    private Intent intent;
 
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
@@ -137,8 +136,11 @@ public class LocationMonitorService extends Service {
         mServiceLooper.quit();
     }
 
+    public static void clearLastArea(Context context) {
+        saveCurrentArea(null, context);
+    }
+
     private void onHandleIntent(Intent intent) {
-        this.intent = intent;
         targets = ((LocationMonitorApp)getApplication()).readTargets();
         buildApiClient();
     }
@@ -152,15 +154,26 @@ public class LocationMonitorService extends Service {
                     .build();
         }
 
-        googleApiClient.connect();
+        if (googleApiClient.isConnected()) {
+            startLocationUpdates();
+        } else {
+            googleApiClient.connect();
+        }
     }
 
     private void startLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 Utils.isLocationEnabled(this)) {
 
-            LocationRequest locationRequest = createLocationRequest();
-            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, locationListener);
+            Location lastKnownLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+
+            Log.d(TAG, "lastKnownlocation == null " + (lastKnownLocation == null));
+
+            if (lastKnownLocation != null) {
+                processLocationUpdate(lastKnownLocation);
+            } else {
+                notifyUser("Location is null", "LocationMonitor");
+            }
 
             numberOfFailedUpdates = 0;
 
@@ -175,6 +188,7 @@ public class LocationMonitorService extends Service {
         @Override
         public void onLocationChanged(Location location) {
             if (location != null) {
+                Log.d(TAG, "start processing new location");
                 processLocationUpdate(location);
 
                 shutdown();
@@ -212,7 +226,7 @@ public class LocationMonitorService extends Service {
                 notifyUserChangePosition(lastArea, newTargetArea);
             }
 
-            saveCurrentArea(newTargetArea);
+            saveCurrentArea(newTargetArea, this);
 
             if (newTargetArea != null) {
                 notifyUserIsInArea(newTargetArea, location);
@@ -247,8 +261,8 @@ public class LocationMonitorService extends Service {
         notifyUser(message, title);
     }
 
-    private void saveCurrentArea(TargetArea newTargetArea) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+    private static void saveCurrentArea(TargetArea newTargetArea, Context context) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (newTargetArea == null) {
             sharedPreferences
                     .edit()

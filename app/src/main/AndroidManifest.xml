@@ -26,11 +26,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.LocationMonitorService"
-            android:process=":remote"/>
-
-        <receiver
-            android:name=".AlarmReceiver"
+        <service
+            android:name=".service.LocationMonitorService"
             android:process=":remote" />
 
         <meta-data
