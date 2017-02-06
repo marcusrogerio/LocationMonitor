@@ -22,8 +22,8 @@ android {
         applicationId "com.romio.locationtest"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 15
-        versionName "1.13"
+        versionCode 16
+        versionName "1.14"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -42,13 +42,9 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.1.0'
     testCompile 'junit:junit:4.12'
 
-    compile 'com.jakewharton:butterknife:8.4.0'
-    annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
-
     compile 'com.j256.ormlite:ormlite-core:4.48' // orm
     compile 'com.j256.ormlite:ormlite-android:4.48' // orm
 
-//    compile 'com.google.android.gms:play-services:10.0.1'
     compile 'com.google.android.gms:play-services-location:10.0.1'
     compile 'com.google.android.gms:play-services-maps:10.0.1'
     compile 'org.jetbrains:annotations-java5:15.0'
