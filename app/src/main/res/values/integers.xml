@@ -2,18 +2,15 @@
 <resources>
     <!--in meters-->
     <integer name="radius">1000</integer>
-
-    <!--for location listener-->
-    <integer name="time_interval">3000</integer>
-    <integer name="time_interval_fastest">2000</integer>
+    <integer name="zoom">13</integer>
 
     <!--for location monitor-->
     <!--in milliseconds-->
-    <integer name="location_monitor_time_interval">10000</integer>
+    <integer name="location_monitor_time_interval">160000</integer>
     <integer name="location_monitor_time_offset">5000</integer>
 
     <!--for area monitor-->
     <!--in seconds-->
-    <integer name="area_monitor_time_interval">100</integer>
+    <integer name="area_monitor_time_interval">300</integer>
 
 </resources>

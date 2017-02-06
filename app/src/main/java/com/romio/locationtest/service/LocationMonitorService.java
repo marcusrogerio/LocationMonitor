@@ -27,8 +27,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.romio.locationtest.LocationMonitorApp;
@@ -47,11 +45,11 @@ import java.util.Date;
 
 public class LocationMonitorService extends Service {
 
-    public static final String DATA = "com.romio.locationtest.location.service.data";
     public static final int REQUEST_CODE = 103;
 
     private static final String TAG = LocationMonitorService.class.getSimpleName();
     private static final String SERVICE_NAME = LocationMonitorService.class.getName();
+
     private static final String CURRENT_AREA_LATITUDE = "com.romio.locationtest.location.current.latItude";
     private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
     private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
@@ -59,7 +57,6 @@ public class LocationMonitorService extends Service {
     private static final String TIME_INSIDE_AREA_UPDATE = "com.romio.locationtest.location.area.inside.time";
 
     private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
-    private static final int MAX_NUMBER_OF_FAILED_LOCATION_UPDATES = 5;
     private static int notificationId = 0;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
@@ -67,7 +64,6 @@ public class LocationMonitorService extends Service {
     private ArrayList<TargetArea> targets;
     private boolean mRedelivery;
     private int startId;
-    private int numberOfFailedUpdates;
 
     enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
@@ -155,19 +151,19 @@ public class LocationMonitorService extends Service {
         }
 
         if (googleApiClient.isConnected()) {
-            startLocationUpdates();
+            getLastKnownLocation();
         } else {
             googleApiClient.connect();
         }
     }
 
-    private void startLocationUpdates() {
+    private void getLastKnownLocation() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 Utils.isLocationEnabled(this)) {
 
             Location lastKnownLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
 
-            Log.d(TAG, "lastKnownlocation == null " + (lastKnownLocation == null));
+            Log.d(TAG, "last known location is null = " + (lastKnownLocation == null));
 
             if (lastKnownLocation != null) {
                 processLocationUpdate(lastKnownLocation);
@@ -175,34 +171,11 @@ public class LocationMonitorService extends Service {
                 notifyUser("Location is null", "LocationMonitor");
             }
 
-            numberOfFailedUpdates = 0;
-
         } else {
             Log.w(TAG, "Location permission wasn't granted or location wasn't enabled");
             shutdown();
         }
     }
-
-    private LocationListener locationListener = new LocationListener() {
-
-        @Override
-        public void onLocationChanged(Location location) {
-            if (location != null) {
-                Log.d(TAG, "start processing new location");
-                processLocationUpdate(location);
-
-                shutdown();
-
-            } else {
-                numberOfFailedUpdates++;
-            }
-
-            if (numberOfFailedUpdates == MAX_NUMBER_OF_FAILED_LOCATION_UPDATES) {
-                Log.e(TAG, "Can't obtain location");
-                shutdown();
-            }
-        }
-    };
 
     private void processLocationUpdate(Location location) {
         if (targets == null) {
@@ -323,7 +296,6 @@ public class LocationMonitorService extends Service {
 
         Intent resultIntent = new Intent(this, MainActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        resultIntent.putParcelableArrayListExtra(DATA, targets);
 
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(resultPendingIntent);
@@ -347,15 +319,6 @@ public class LocationMonitorService extends Service {
         return null;
     }
 
-    private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(getResources().getInteger(R.integer.time_interval));
-        locationRequest.setFastestInterval(getResources().getInteger(R.integer.time_interval_fastest));
-        locationRequest.setPriority(LocationRequest.PRIORITY_LOW_POWER);
-
-        return locationRequest;
-    }
-
     private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
@@ -364,16 +327,11 @@ public class LocationMonitorService extends Service {
         }
     };
 
-    private void stopListeningLocationUpdates() {
-        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, locationListener);
-        googleApiClient.disconnect();
-    }
-
     private GoogleApiClient.ConnectionCallbacks connectionCallback = new GoogleApiClient.ConnectionCallbacks() {
 
         @Override
         public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            LocationMonitorService.this.startLocationUpdates();
+            LocationMonitorService.this.getLastKnownLocation();
         }
 
         @Override
@@ -386,7 +344,7 @@ public class LocationMonitorService extends Service {
         targets = new ArrayList<>();
         ((LocationMonitorApp)getApplication()).releaseDBManager();
 
-        stopListeningLocationUpdates();
+        googleApiClient.disconnect();
         WakeLocker.release();
         stopSelf(startId);
     }
