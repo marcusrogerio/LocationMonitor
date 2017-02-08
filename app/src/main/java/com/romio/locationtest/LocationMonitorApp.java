@@ -69,12 +69,12 @@ public class LocationMonitorApp extends Application {
             alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
 
             saveLocationMonitorAlarmWasSet(true);
-            LocationMonitorService.clearLastArea(this);
             Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
 
         } else {
             alarmManager.cancel(pendingIntent);
             saveLocationMonitorAlarmWasSet(false);
+            LocationMonitorService.clearLastArea(this);
             Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
         }
     }

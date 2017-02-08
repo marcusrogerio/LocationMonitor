@@ -8,7 +8,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,11 +26,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.MainActivity;
@@ -60,7 +59,6 @@ public class LocationMonitorService extends Service {
     private static int notificationId = 0;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
-    private GoogleApiClient googleApiClient;
     private ArrayList<TargetArea> targets;
     private boolean mRedelivery;
     private int startId;
@@ -137,38 +135,23 @@ public class LocationMonitorService extends Service {
     }
 
     private void onHandleIntent(Intent intent) {
-        targets = ((LocationMonitorApp)getApplication()).readTargets();
-        buildApiClient();
+        targets = ((LocationMonitorApp) getApplication()).readTargets();
+        getCurrentLocation();
     }
 
-    private void buildApiClient() {
-        if (googleApiClient == null) {
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addConnectionCallbacks(connectionCallback)
-                    .addOnConnectionFailedListener(onConnectionFailedListener)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
-
-        if (googleApiClient.isConnected()) {
-            getLastKnownLocation();
-        } else {
-            googleApiClient.connect();
-        }
-    }
-
-    private void getLastKnownLocation() {
+    private void getCurrentLocation() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 Utils.isLocationEnabled(this)) {
 
-            Location lastKnownLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            String provider = setProvider(locationManager);
 
-            Log.d(TAG, "last known location is null = " + (lastKnownLocation == null));
+            if (provider != null) {
+                locationManager.requestSingleUpdate(provider, locationListener, null);
 
-            if (lastKnownLocation != null) {
-                processLocationUpdate(lastKnownLocation);
             } else {
-                notifyUser("Location is null", "LocationMonitor");
+                notifyUser("No location providers available", "Location Monitor");
+                shutdown();
             }
 
         } else {
@@ -176,6 +159,45 @@ public class LocationMonitorService extends Service {
             shutdown();
         }
     }
+
+    private String setProvider(LocationManager locationManager) {
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            return LocationManager.GPS_PROVIDER;
+
+        } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            return LocationManager.NETWORK_PROVIDER;
+
+        } else {
+            return null;
+        }
+    }
+
+    private LocationListener locationListener = new LocationListener() {
+
+        @Override
+        public void onLocationChanged(Location location) {
+            if (location != null) {
+                processLocationUpdate(location);
+            } else {
+                notifyUser("Location is null", "LocationMonitor");
+            }
+
+            shutdown();
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            notifyUser(provider + " is Disabled", "LocationMonitor");
+        }
+    };
 
     private void processLocationUpdate(Location location) {
         if (targets == null) {
@@ -319,33 +341,11 @@ public class LocationMonitorService extends Service {
         return null;
     }
 
-    private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
-        @Override
-        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Toast.makeText(LocationMonitorService.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
-            LocationMonitorService.this.shutdown();
-        }
-    };
-
-    private GoogleApiClient.ConnectionCallbacks connectionCallback = new GoogleApiClient.ConnectionCallbacks() {
-
-        @Override
-        public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            LocationMonitorService.this.getLastKnownLocation();
-        }
-
-        @Override
-        public void onConnectionSuspended(int i) {
-            Toast.makeText(LocationMonitorService.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
-        }
-    };
-
     private void shutdown() {
         targets = new ArrayList<>();
-        ((LocationMonitorApp)getApplication()).releaseDBManager();
+        ((LocationMonitorApp) getApplication()).releaseDBManager();
 
-        googleApiClient.disconnect();
-        WakeLocker.release();
         stopSelf(startId);
+        WakeLocker.release();
     }
 }
