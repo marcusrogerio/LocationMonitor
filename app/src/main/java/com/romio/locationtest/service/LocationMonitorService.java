@@ -62,8 +62,8 @@ public class LocationMonitorService extends Service {
     private static final String TIME_INSIDE_AREA_UPDATE = "com.romio.locationtest.location.area.inside.time";
 
     private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
-    private static final int MAX_NUMBER_OF_FAILED_LOCATION_UPDATES = 5;
     private static int notificationId = 0;
+    private static final int MAX_NUMBER_OF_FAILED_LOCATION_UPDATES = 5;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
     private GoogleApiClient googleApiClient;

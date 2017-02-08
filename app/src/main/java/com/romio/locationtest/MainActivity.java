@@ -189,6 +189,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         ((LocationMonitorApp)getApplication()).toggleLocationMonitorService(this);
     }
 
+    void doBindService() {
+        bindService(new Intent(this, TrackerService.class), mConnection,
+                Context.BIND_AUTO_CREATE);
+        mIsBound = true;
+    }
+
+    void doUnbindService() {
+        if (!mIsBound)
+            return;
+
+        if (mService != null) {
+            try {
+                Message msg = Message.obtain(null, TrackerService.MSG_UNREGISTER_CLIENT);
+                msg.replyTo = mMessenger;
+                mService.send(msg);
+            }
+            catch (RemoteException e) {
+            }
+        }
+
+        unbindService(mConnection);
+        mIsBound = false;
+
+        logText("service stopped");
+    }
+
     private boolean verifyGooglePlayServices() {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
         int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
