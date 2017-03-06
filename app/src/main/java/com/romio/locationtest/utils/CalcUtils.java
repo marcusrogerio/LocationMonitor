@@ -1,14 +1,16 @@
-package com.romio.locationtest;
+package com.romio.locationtest.utils;
 
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationManager;
 
+import com.romio.locationtest.TargetArea;
+
 /**
  * Created by roman on 1/14/17
  */
 
-public class Utils {
+public class CalcUtils {
 
     public static double distance(
             double lat1, double lng1, double lat2, double lng2) {

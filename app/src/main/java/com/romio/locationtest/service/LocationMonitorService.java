@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -32,7 +31,7 @@ import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.TargetArea;
-import com.romio.locationtest.Utils;
+import com.romio.locationtest.utils.CalcUtils;
 import com.romio.locationtest.WakeLocker;
 
 import java.util.ArrayList;
@@ -141,7 +140,7 @@ public class LocationMonitorService extends Service {
 
     private void getCurrentLocation() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                Utils.isLocationEnabled(this)) {
+                CalcUtils.isLocationEnabled(this)) {
 
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             String provider = setProvider(locationManager);
@@ -333,7 +332,7 @@ public class LocationMonitorService extends Service {
 
     private TargetArea getCurrentArea(Location location) {
         for (TargetArea targetArea : targets) {
-            if (Utils.isInside(targetArea, location)) {
+            if (CalcUtils.isInside(targetArea, location)) {
                 return targetArea;
             }
         }

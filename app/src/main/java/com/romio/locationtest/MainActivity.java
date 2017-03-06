@@ -33,6 +33,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
+import com.romio.locationtest.utils.CalcUtils;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -157,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_LOCATION) {
-            if (Utils.isLocationEnabled(this)) {
+            if (CalcUtils.isLocationEnabled(this)) {
                 onLocationEnabled();
             }
         } else {
@@ -253,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void checkLocationEnabled() {
-        if (!Utils.isLocationEnabled(this)) {
+        if (!CalcUtils.isLocationEnabled(this)) {
             Intent enableLocationIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivityForResult(enableLocationIntent, REQUEST_ENABLE_LOCATION);
         }
@@ -319,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private boolean isInsideExistingArea(LatLng newTargetCenter) {
         for (TargetArea targetArea : targets) {
-            double distance = Utils.distance(newTargetCenter.latitude, newTargetCenter.longitude, targetArea.getAreaCenter().latitude, targetArea.getAreaCenter().longitude);
+            double distance = CalcUtils.distance(newTargetCenter.latitude, newTargetCenter.longitude, targetArea.getAreaCenter().latitude, targetArea.getAreaCenter().longitude);
 
             if (distance <= radius + targetArea.getRadius()) {
                 return true;
