@@ -1,4 +1,4 @@
-package com.romio.locationtest.data;
+package com.romio.locationtest.data.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -8,11 +8,12 @@ import com.j256.ormlite.android.apptools.OrmLiteSqliteOpenHelper;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
+import com.romio.locationtest.data.TargetAreaDto;
 
 import java.sql.SQLException;
 
 /**
- * Created by roman on 1/12/17.
+ * Created by roman on 1/12/17
  */
 
 public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager {

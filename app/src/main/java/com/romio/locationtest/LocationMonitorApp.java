@@ -12,8 +12,8 @@ import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.romio.locationtest.data.DBManager;
-import com.romio.locationtest.data.DataBaseHelper;
+import com.romio.locationtest.data.db.DBManager;
+import com.romio.locationtest.data.db.DataBaseHelper;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
 import com.romio.locationtest.service.LocationMonitorService;

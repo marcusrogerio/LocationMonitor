@@ -1,7 +1,7 @@
-package com.romio.locationtest.net;
+package com.romio.locationtest.data.net;
 
 /**
- * Created by roman on 3/7/17.
+ * Created by roman on 3/7/17
  */
 
 public class NetConstants {

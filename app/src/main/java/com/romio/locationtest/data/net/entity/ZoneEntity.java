@@ -1,4 +1,6 @@
-package com.romio.locationtest.net.in;
+package com.romio.locationtest.data.net.entity;
+
+import com.google.gson.annotations.SerializedName;
 
 import java.util.Date;
 
@@ -8,14 +10,31 @@ import java.util.Date;
 
 public class ZoneEntity {
 
+    @SerializedName("radius")
     private int radius;
+
+    @SerializedName("enabled")
     private boolean enabled;
+
+    @SerializedName("lat")
     private double latitude;
+
+    @SerializedName("lon")
     private double longitude;
+
+    @SerializedName("created_at")
     private Date dateCreated;
+
+    @SerializedName("description")
     private String description;
+
+    @SerializedName("id")
     private String id;
+
+    @SerializedName("image")
     private String image;
+
+    @SerializedName("name")
     private String name;
 
     public int getRadius() {

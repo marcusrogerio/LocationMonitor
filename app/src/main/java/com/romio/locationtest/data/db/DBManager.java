@@ -1,6 +1,7 @@
-package com.romio.locationtest.data;
+package com.romio.locationtest.data.db;
 
 import com.j256.ormlite.dao.Dao;
+import com.romio.locationtest.data.TargetAreaDto;
 
 import java.sql.SQLException;
 
@@ -10,5 +11,6 @@ import java.sql.SQLException;
 
 public interface DBManager {
     Dao<TargetAreaDto, String> getAreaDao() throws SQLException;
+
     void clearAll();
 }
