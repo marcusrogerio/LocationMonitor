@@ -17,16 +17,7 @@ import retrofit2.http.POST;
  * Created by roman on 3/5/17
  */
 
-public interface KolejkaAPI {
-
-    @POST("zones")
-    ZoneEntity addZone(@Body ZoneEntity zone);
-
-    @GET("zones")
-    GeneralResponse<List<ZoneEntity>> getZones();
-
-    @DELETE("zones/{zone_id}")
-    GeneralResponse<Object> deleteZone(@Field("zone_id") String zoneId);
+public interface KolejkaTrackingAPI {
 
     @POST("tracking")
     GeneralResponse<TrackingEntity> sendTracking(@Body TrackingEntity trackingEntity);

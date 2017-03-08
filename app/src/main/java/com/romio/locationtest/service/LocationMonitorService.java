@@ -26,16 +26,17 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.google.android.gms.maps.model.LatLng;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.MainActivity;
 import com.romio.locationtest.R;
-import com.romio.locationtest.TargetArea;
-import com.romio.locationtest.utils.CalcUtils;
 import com.romio.locationtest.WakeLocker;
+import com.romio.locationtest.data.AreasManager;
+import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.utils.CalcUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by roman on 1/10/17
@@ -58,11 +59,11 @@ public class LocationMonitorService extends Service {
     private static int notificationId = 0;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
-    private ArrayList<TargetArea> targets;
+    private List<TargetAreaDto> targets;
     private boolean mRedelivery;
     private int startId;
 
-    enum Movement {
+    private enum Movement {
         ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
 
         private String name;
@@ -134,7 +135,8 @@ public class LocationMonitorService extends Service {
     }
 
     private void onHandleIntent(Intent intent) {
-        targets = ((LocationMonitorApp) getApplication()).readTargets();
+        AreasManager areasManager = ((LocationMonitorApp) getApplication()).getAreasManager();
+        targets = areasManager.getTargetAreasFromDB();
         getCurrentLocation();
     }
 
@@ -203,8 +205,8 @@ public class LocationMonitorService extends Service {
             Log.d(TAG, "No target areas specified");
 
         } else {
-            TargetArea lastArea = retrieveOldArea();
-            TargetArea newTargetArea = getCurrentArea(location);
+            TargetAreaDto lastArea = retrieveOldArea();
+            TargetAreaDto newTargetArea = getCurrentArea(location);
             String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
             Log.d(TAG, "Current area: " + area);
 
@@ -228,7 +230,7 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private void notifyUserIsInArea(TargetArea targetArea, Location location) {
+    private void notifyUserIsInArea(TargetAreaDto targetArea, Location location) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         long currentMoment = new Date().getTime();
 
@@ -248,14 +250,14 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private void notifyUserInAreaUpdate(TargetArea targetArea, Location location) {
+    private void notifyUserInAreaUpdate(TargetAreaDto targetArea, Location location) {
         String title = "Presence in Area";
         String message = targetArea.getAreaName() + ".\n Latitude: " + location.getLatitude() + "\nLongitude: " + location.getLongitude();
 
         notifyUser(message, title);
     }
 
-    private static void saveCurrentArea(TargetArea newTargetArea, Context context) {
+    private static void saveCurrentArea(TargetAreaDto newTargetArea, Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (newTargetArea == null) {
             sharedPreferences
@@ -269,15 +271,15 @@ public class LocationMonitorService extends Service {
         } else {
             sharedPreferences
                     .edit()
-                    .putFloat(CURRENT_AREA_LATITUDE, (float) newTargetArea.getAreaCenter().latitude)
-                    .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getAreaCenter().longitude)
+                    .putFloat(CURRENT_AREA_LATITUDE, (float) newTargetArea.getLatitude())
+                    .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getLongitude())
                     .putInt(CURRENT_AREA_RADIUS, newTargetArea.getRadius())
                     .putString(CURRENT_AREA_NAME, newTargetArea.getAreaName())
                     .commit();
         }
     }
 
-    private TargetArea retrieveOldArea() {
+    private TargetAreaDto retrieveOldArea() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!sharedPreferences.contains(CURRENT_AREA_NAME)) {
             return null;
@@ -288,18 +290,18 @@ public class LocationMonitorService extends Service {
         int radius = sharedPreferences.getInt(CURRENT_AREA_RADIUS, -1);
         String name = sharedPreferences.getString(CURRENT_AREA_NAME, "");
 
-        return new TargetArea(name, new LatLng(latitude, longitude), radius);
+        return new TargetAreaDto(name, latitude, longitude, radius);
     }
 
-    private void notifyUserChangePosition(TargetArea currentArea, TargetArea newTargetArea) {
-        String message = "Areas changed from " + currentArea.getAreaName() + " to " + newTargetArea.getAreaName();
+    private void notifyUserChangePosition(TargetAreaDto currentArea, Movement movement) {
+        String message = "Areas changed from " + currentArea.getAreaName() + " to " + movement.getName();
         String title = "Areas changed";
 
         notifyUser(message, title);
     }
 
-    private void notifyUserChangePosition(TargetArea area, @NonNull LocationMonitorService.Movement enterArea) {
-        String message = enterArea.getName() + " " + area.getAreaName();
+    private void notifyUserChangePosition(TargetAreaDto newAreaDto, @NonNull TargetAreaDto previuosAreaDto) {
+        String message = previuosAreaDto.getAreaName() + " " + newAreaDto.getAreaName();
         String title = "Area status changed";
 
         notifyUser(message, title);
@@ -330,10 +332,10 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private TargetArea getCurrentArea(Location location) {
-        for (TargetArea targetArea : targets) {
-            if (CalcUtils.isInside(targetArea, location)) {
-                return targetArea;
+    private TargetAreaDto getCurrentArea(Location location) {
+        for (TargetAreaDto targetAreaDto : targets) {
+            if (CalcUtils.isInside(targetAreaDto, location)) {
+                return targetAreaDto;
             }
         }
 
@@ -342,7 +344,8 @@ public class LocationMonitorService extends Service {
 
     private void shutdown() {
         targets = new ArrayList<>();
-        ((LocationMonitorApp) getApplication()).releaseDBManager();
+        LocationMonitorApp app = (LocationMonitorApp) getApplication();
+        app.getAreasManager().releaseDBManager();
 
         stopSelf(startId);
         WakeLocker.release();

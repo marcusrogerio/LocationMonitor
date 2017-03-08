@@ -32,14 +32,12 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.data.TargetAreaMapper;
 import com.romio.locationtest.utils.CalcUtils;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, MainView {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -47,16 +45,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
 
+    private MainPresenter presenter;
+
     private GoogleMap map;
     private SupportMapFragment mapFragment;
     private ProgressBar progressBar;
     private MenuItem itemPlayStop;
 
-    private ArrayList<TargetArea> targets = new ArrayList<>();
-
-    private static int counter = 0;
     private int zoom;
-    private int radius;
     private int areaFillColor;
     private int boundColor;
 
@@ -67,12 +63,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initValues();
+        LocationMonitorApp app = (LocationMonitorApp) getApplication();
 
-        targets = ((LocationMonitorApp) getApplication()).readTargets();
-        if (targets != null) {
-            counter += targets.size();
-        }
+        presenter = new MainPresenter(app.getAreasManager(), this);
+        presenter.loadTargets();
+
+        initValues();
 
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
         progressBar.setVisibility(View.VISIBLE);
@@ -85,13 +81,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     protected void onDestroy() {
-        if (map != null) {
-            map.clear();
-        }
-
-        targets = new ArrayList<>();
-        ((LocationMonitorApp) getApplication()).releaseDBManager();
-
+        presenter.onViewDestroying();
+        presenter = null;
         super.onDestroy();
     }
 
@@ -110,22 +101,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.item_launch: {
-                if (canStartService) {
+                if (presenter.canLaunchService()) {
                     toggleLocationService();
                 } else {
                     Toast.makeText(MainActivity.this, "Can't start service yet", Toast.LENGTH_SHORT).show();
                 }
 
                 updateMenuItemState();
-            }
-            return true;
-
-            case R.id.item_clear_all: {
-                if (((LocationMonitorApp) getApplication()).isLocationMonitorAlarmSet()) {
-                    Toast.makeText(MainActivity.this, "Stop service before cleaning target areas", Toast.LENGTH_SHORT).show();
-                } else {
-                    deleteAllTargetAreas();
-                }
             }
             return true;
 
@@ -176,12 +158,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             googleMap.setMyLocationEnabled(true);
             moveToMyLocation();
         }
-
-        if (targets != null) {
-            addAllTargetsToMap();
-        }
-
-        initMapListeners(googleMap);
     }
 
     private void permissionsGranted() {
@@ -190,19 +166,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void initValues() {
         zoom = getResources().getInteger(R.integer.zoom);
-        radius = getResources().getInteger(R.integer.radius);
         areaFillColor = ActivityCompat.getColor(this, R.color.area_fill_color);
         boundColor = ActivityCompat.getColor(this, R.color.bound_color);
-    }
-
-    private void deleteAllTargetAreas() {
-        targets.clear();
-
-        if (map != null) {
-            map.clear();
-        }
-
-        ((LocationMonitorApp) getApplication()).getDBManager().clearAll();
     }
 
     private void onLocationEnabled() {
@@ -262,74 +227,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         onLocationEnabled();
     }
 
-    private void initMapListeners(GoogleMap googleMap) {
-        googleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng) {
-                addTargetArea(latLng);
-            }
-        });
-    }
-
-    private void addAllTargetsToMap() {
-        for (TargetArea targetArea : targets) {
-            map.addMarker(new MarkerOptions()
-                    .position(targetArea.getAreaCenter())
-                    .title(targetArea.getAreaName()));
-
-            map.addCircle(new CircleOptions()
-                    .center(targetArea.getAreaCenter())
-                    .radius(targetArea.getRadius())
-                    .strokeColor(boundColor)
-                    .fillColor(areaFillColor));
-        }
-    }
-
-    private void addTargetArea(LatLng latLng) {
-        boolean isExistingArea = isInsideExistingArea(latLng);
-        String areaName = "Area " + String.valueOf(counter);
-        counter++;
-
-        if (!isExistingArea) {
-            map.addMarker(new MarkerOptions()
-                    .position(latLng)
-                    .title(areaName));
-
-            map.addCircle(new CircleOptions()
-                    .center(latLng)
-                    .radius(radius)
-                    .strokeColor(boundColor)
-                    .fillColor(areaFillColor));
-
-            TargetArea targetArea = new TargetArea(areaName, latLng, radius);
-            targets.add(targetArea);
-            addTargetAreaToDB(targetArea);
-        }
-    }
-
-    private void addTargetAreaToDB(@NonNull TargetArea targetArea) {
-        TargetAreaDto targetAreaDto = TargetAreaMapper.map(targetArea);
-        try {
-            ((LocationMonitorApp) getApplication()).getDBManager().getAreaDao().createOrUpdate(targetAreaDto);
-
-        } catch (SQLException e) {
-            Log.e(TAG, "Error adding area to DB", e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private boolean isInsideExistingArea(LatLng newTargetCenter) {
-        for (TargetArea targetArea : targets) {
-            double distance = CalcUtils.distance(newTargetCenter.latitude, newTargetCenter.longitude, targetArea.getAreaCenter().latitude, targetArea.getAreaCenter().longitude);
-
-            if (distance <= radius + targetArea.getRadius()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private void moveToMyLocation() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -345,6 +242,40 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 CameraUpdate yourLocation = CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), zoom);
                 map.animateCamera(yourLocation);
             }
+        }
+    }
+
+    @Override
+    public void addArea(TargetAreaDto targetArea) {
+        LatLng center = new LatLng(targetArea.getLatitude(), targetArea.getLongitude());
+
+        map.addMarker(new MarkerOptions()
+                .position(center)
+                .title(targetArea.getAreaName()));
+
+        map.addCircle(new CircleOptions()
+                .center(center)
+                .radius(targetArea.getRadius())
+                .strokeColor(boundColor)
+                .fillColor(areaFillColor));
+    }
+
+    @Override
+    public void clearAreas() {
+        if (map != null) {
+            map.clear();
+        }
+    }
+
+    @Override
+    public void showError(String message) {
+        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onAreasLoaded(List<TargetAreaDto> targetAreaDtos) {
+        for (TargetAreaDto targetArea : targetAreaDtos) {
+            addArea(targetArea);
         }
     }
 }

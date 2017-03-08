@@ -7,20 +7,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
-import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.romio.locationtest.data.db.DBManager;
-import com.romio.locationtest.data.db.DataBaseHelper;
-import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.data.TargetAreaMapper;
+import com.romio.locationtest.data.AreasManager;
+import com.romio.locationtest.data.AreasManagerImpl;
+import com.romio.locationtest.data.TrackingManager;
+import com.romio.locationtest.data.TrackingManagerImpl;
+import com.romio.locationtest.data.net.entity.TrackingEntity;
 import com.romio.locationtest.service.LocationMonitorService;
-
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import com.romio.locationtest.utils.NetworkManager;
+import com.romio.locationtest.utils.NetworkManagerImpl;
 
 import io.fabric.sdk.android.Fabric;
 
@@ -32,7 +29,10 @@ public class LocationMonitorApp extends Application {
 
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
     private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
-    private DataBaseHelper databaseHelper = null;
+
+    private AreasManager areasManager;
+    private TrackingManager trackingManager;
+    private NetworkManager networkManager;
 
     private int locationMonitorOffset = 3000;
     private int locationMonitorInterval = 120000;
@@ -44,21 +44,6 @@ public class LocationMonitorApp extends Application {
 
         locationMonitorOffset = getResources().getInteger(R.integer.location_monitor_time_offset);
         locationMonitorInterval = getResources().getInteger(R.integer.location_monitor_time_interval);
-    }
-
-    public void releaseDBManager() {
-        if (databaseHelper != null) {
-            OpenHelperManager.releaseHelper();
-            databaseHelper = null;
-        }
-    }
-
-    public DBManager getDBManager() {
-        if (databaseHelper == null) {
-            databaseHelper = OpenHelperManager.getHelper(this, DataBaseHelper.class);
-        }
-
-        return databaseHelper;
     }
 
     public void toggleLocationMonitorService(MainActivity mainActivity) {
@@ -84,18 +69,6 @@ public class LocationMonitorApp extends Application {
         return sharedPreferences.getBoolean(LOCATION_MONITOR_ALARM, false);
     }
 
-    public ArrayList<TargetArea> readTargets() {
-        DBManager dbManager = getDBManager();
-        try {
-            List<TargetAreaDto> targetAreaDtoList = dbManager.getAreaDao().queryForAll();
-            return TargetAreaMapper.mapFromDto(targetAreaDtoList);
-
-        } catch (SQLException e) {
-            Log.e(TAG, "Error reading targets from DB", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     private PendingIntent prepareLocationMonitorPendingIntent() {
         Intent intent = new Intent(getApplicationContext(), LocationMonitorService.class);
 
@@ -108,5 +81,29 @@ public class LocationMonitorApp extends Application {
                 .edit()
                 .putBoolean(LOCATION_MONITOR_ALARM, isSet)
                 .commit();
+    }
+
+    public AreasManager getAreasManager() {
+        if (areasManager == null) {
+            areasManager = new AreasManagerImpl(this, getNetworkManager());
+        }
+
+        return areasManager;
+    }
+
+    public TrackingManager getTrackingManager() {
+        if (trackingManager == null) {
+            trackingManager = new TrackingManagerImpl(this);
+        }
+
+        return trackingManager;
+    }
+
+    private NetworkManager getNetworkManager() {
+        if (networkManager == null) {
+            networkManager = new NetworkManagerImpl(this);
+        }
+
+        return networkManager;
     }
 }

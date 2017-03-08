@@ -5,6 +5,7 @@ import android.location.Location;
 import android.location.LocationManager;
 
 import com.romio.locationtest.TargetArea;
+import com.romio.locationtest.data.TargetAreaDto;
 
 /**
  * Created by roman on 1/14/17
@@ -24,10 +25,10 @@ public class CalcUtils {
         return earthRadius * hipotenuse * 1000;
     }
 
-    public static boolean isInside(TargetArea targetArea, Location location) {
+    public static boolean isInside(TargetAreaDto targetArea, Location location) {
         double distance = distance(
-                targetArea.getAreaCenter().latitude,
-                targetArea.getAreaCenter().longitude,
+                targetArea.getLatitude(),
+                targetArea.getLongitude(),
                 location.getLatitude(),
                 location.getLongitude());
 

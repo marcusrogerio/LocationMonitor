@@ -4,6 +4,7 @@ import android.support.annotation.Nullable;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.romio.locationtest.TargetArea;
+import com.romio.locationtest.data.net.entity.ZoneEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +65,37 @@ public class TargetAreaMapper {
         ArrayList<TargetAreaDto> targetAreaDtos = new ArrayList<>();
         for (TargetArea targetArea : targetAreaList) {
             targetAreaDtos.add( map(targetArea) );
+        }
+
+        return targetAreaDtos;
+    }
+
+    public static TargetAreaDto map(@Nullable ZoneEntity zoneEntity) {
+        if (zoneEntity == null) {
+            return null;
+        }
+
+        TargetAreaDto targetAreaDto = new TargetAreaDto();
+        targetAreaDto.setAreaName(zoneEntity.getName());
+        targetAreaDto.setDateCreated(zoneEntity.getDateCreated());
+        targetAreaDto.setDescription(zoneEntity.getDescription());
+        targetAreaDto.setEnabled(zoneEntity.isEnabled());
+        targetAreaDto.setId(zoneEntity.getId());
+        targetAreaDto.setLatitude(zoneEntity.getLatitude());
+        targetAreaDto.setLongitude(zoneEntity.getLongitude());
+        targetAreaDto.setRadius(zoneEntity.getRadius());
+
+        return targetAreaDto;
+    }
+
+    public static List<TargetAreaDto> map(@Nullable List<ZoneEntity> zoneEntities) {
+        if (zoneEntities == null || zoneEntities.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<TargetAreaDto> targetAreaDtos = new ArrayList<>(zoneEntities.size());
+        for (ZoneEntity zoneEntity : zoneEntities) {
+            targetAreaDtos.add( map(zoneEntity) );
         }
 
         return targetAreaDtos;
