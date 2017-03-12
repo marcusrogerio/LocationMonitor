@@ -10,10 +10,14 @@ import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.j256.ormlite.android.apptools.OpenHelperManager;
 import com.romio.locationtest.data.AreasManager;
 import com.romio.locationtest.data.AreasManagerImpl;
 import com.romio.locationtest.data.TrackingManager;
 import com.romio.locationtest.data.TrackingManagerImpl;
+import com.romio.locationtest.data.db.DBHelper;
+import com.romio.locationtest.data.db.DBManager;
+import com.romio.locationtest.data.db.DataBaseHelper;
 import com.romio.locationtest.data.net.entity.TrackingEntity;
 import com.romio.locationtest.service.LocationMonitorService;
 import com.romio.locationtest.utils.NetworkManager;
@@ -25,7 +29,7 @@ import io.fabric.sdk.android.Fabric;
  * Created by roman on 1/9/17
  */
 
-public class LocationMonitorApp extends Application {
+public class LocationMonitorApp extends Application implements DBHelper {
 
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
     private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
@@ -33,6 +37,7 @@ public class LocationMonitorApp extends Application {
     private AreasManager areasManager;
     private TrackingManager trackingManager;
     private NetworkManager networkManager;
+    private DataBaseHelper databaseHelper;
 
     private int locationMonitorOffset = 3000;
     private int locationMonitorInterval = 120000;
@@ -93,7 +98,7 @@ public class LocationMonitorApp extends Application {
 
     public TrackingManager getTrackingManager() {
         if (trackingManager == null) {
-            trackingManager = new TrackingManagerImpl(this);
+            trackingManager = new TrackingManagerImpl(this, networkManager);
         }
 
         return trackingManager;
@@ -105,5 +110,26 @@ public class LocationMonitorApp extends Application {
         }
 
         return networkManager;
+    }
+
+    public DBHelper getDBHelper() {
+        return this;
+    }
+
+    @Override
+    public DBManager getDbManager() {
+        if (databaseHelper == null) {
+            databaseHelper = OpenHelperManager.getHelper(this, DataBaseHelper.class);
+        }
+
+        return databaseHelper;
+    }
+
+    @Override
+    public void release() {
+        if (databaseHelper != null) {
+            OpenHelperManager.releaseHelper();
+            databaseHelper = null;
+        }
     }
 }

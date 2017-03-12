@@ -1,5 +1,6 @@
 package com.romio.locationtest.utils;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.romio.locationtest.BuildConfig;
 import com.romio.locationtest.data.net.NetConstants;
@@ -21,7 +22,7 @@ public class NetUtils {
     public static Retrofit getRetrofit() {
         return new Retrofit.Builder()
                 .baseUrl(NetConstants.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create( new GsonBuilder().create() ))
+                .addConverterFactory(GsonConverterFactory.create( prepareGson() ))
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .client(getHttpClient())
                 .build();
@@ -40,5 +41,12 @@ public class NetUtils {
         }
 
         return builder.build();
+    }
+
+    private static Gson prepareGson() {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.setDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+
+        return gsonBuilder.create();
     }
 }

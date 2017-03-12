@@ -9,8 +9,6 @@ import rx.Observable;
  */
 
 public interface AreasManager {
-    void releaseDBManager();
-
     Observable<List<TargetAreaDto>> loadTargetAreas();
 
     List<TargetAreaDto> getTargetAreasFromDB();

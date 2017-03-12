@@ -65,8 +65,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         LocationMonitorApp app = (LocationMonitorApp) getApplication();
 
-        presenter = new MainPresenter(app.getAreasManager(), this);
-        presenter.loadTargets();
+        presenter = new MainPresenter(app.getDBHelper(), app.getAreasManager(), this);
 
         initValues();
 
@@ -157,6 +156,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
             moveToMyLocation();
+
+            presenter.loadTargets();
         }
     }
 
@@ -275,7 +276,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onAreasLoaded(List<TargetAreaDto> targetAreaDtos) {
         for (TargetAreaDto targetArea : targetAreaDtos) {
-            addArea(targetArea);
+            if (targetArea.isEnabled()) {
+                addArea(targetArea);
+            }
         }
     }
 }

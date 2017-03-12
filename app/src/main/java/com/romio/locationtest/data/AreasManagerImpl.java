@@ -1,16 +1,16 @@
 package com.romio.locationtest.data;
 
-import android.content.Context;
 import android.util.Log;
 
-import com.j256.ormlite.android.apptools.OpenHelperManager;
+import com.j256.ormlite.table.TableUtils;
+import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
-import com.romio.locationtest.data.db.DataBaseHelper;
 import com.romio.locationtest.data.net.KolejkaZonesAPI;
 import com.romio.locationtest.data.net.entity.GeneralResponse;
 import com.romio.locationtest.data.net.entity.ZoneEntity;
 import com.romio.locationtest.utils.NetUtils;
 import com.romio.locationtest.utils.NetworkManager;
+import com.romio.locationtest.utils.RxUtils;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -25,22 +25,14 @@ import rx.functions.Func1;
 public class AreasManagerImpl implements AreasManager {
     private static final String TAG = AreasManagerImpl.class.getSimpleName();
 
-    private Context context;
+    private DBHelper dbHelper;
     private KolejkaZonesAPI kolejkaZonesAPI;
-    private DataBaseHelper databaseHelper = null;
+
     private NetworkManager networkManager;
 
-    public AreasManagerImpl(Context context, NetworkManager networkManager) {
-        this.context = context;
+    public AreasManagerImpl(DBHelper dbHelper, NetworkManager networkManager) {
+        this.dbHelper = dbHelper;
         this.networkManager = networkManager;
-    }
-
-    @Override
-    public void releaseDBManager() {
-        if (databaseHelper != null) {
-            OpenHelperManager.releaseHelper();
-            databaseHelper = null;
-        }
     }
 
     @Override
@@ -50,13 +42,12 @@ public class AreasManagerImpl implements AreasManager {
 
         } else {
             return getAreasFromDB();
-
         }
     }
 
     @Override
     public List<TargetAreaDto> getTargetAreasFromDB() {
-        DBManager dbManager = getDBManager();
+        DBManager dbManager = dbHelper.getDbManager();
         try {
             return dbManager.getAreaDao().queryForAll();
 
@@ -73,25 +64,29 @@ public class AreasManagerImpl implements AreasManager {
     private Observable<List<TargetAreaDto>> getAreasFromNet() {
         initNetAPI();
 
-        return kolejkaZonesAPI.getZones().map(new Func1<GeneralResponse<List<ZoneEntity>>, List<TargetAreaDto>>() {
-            @Override
-            public List<TargetAreaDto> call(GeneralResponse<List<ZoneEntity>> listGeneralResponse) {
-                List<TargetAreaDto> targetAreaDtos = TargetAreaMapper.map(listGeneralResponse.getData());
-                updateAreasInDB(targetAreaDtos);
-                return targetAreaDtos;
-            }
-        });
+        return kolejkaZonesAPI
+                .getZones()
+                .compose(RxUtils.<GeneralResponse<List<ZoneEntity>>>applySchedulers())
+                .map(new Func1<GeneralResponse<List<ZoneEntity>>, List<TargetAreaDto>>() {
+                    @Override
+                    public List<TargetAreaDto> call(GeneralResponse<List<ZoneEntity>> listGeneralResponse) {
+                        List<TargetAreaDto> targetAreaDtos = TargetAreaMapper.map(listGeneralResponse.getData());
+                        updateAreasInDB(targetAreaDtos);
+                        return targetAreaDtos;
+                    }
+                });
     }
 
     private void updateAreasInDB(List<TargetAreaDto> targetAreaDtos) {
-        DBManager dbManager = getDBManager();
-        for (TargetAreaDto targetAreaDto : targetAreaDtos) {
-            try {
-                dbManager.getAreaDao().createOrUpdate(targetAreaDto);
+        DBManager dbManager = dbHelper.getDbManager();
+        try {
+            TableUtils.clearTable(dbManager.getAreaDao().getConnectionSource(), TargetAreaDto.class);
 
-            } catch (SQLException e) {
-                Log.e(TAG, "Error adding area to DB", e);
+            for (TargetAreaDto targetAreaDto : targetAreaDtos) {
+                dbManager.getAreaDao().createOrUpdate(targetAreaDto);
             }
+        } catch (SQLException e) {
+            Log.e(TAG, "Error adding area to DB", e);
         }
     }
 
@@ -99,13 +94,5 @@ public class AreasManagerImpl implements AreasManager {
         if (kolejkaZonesAPI == null) {
             kolejkaZonesAPI = NetUtils.getRetrofit().create(KolejkaZonesAPI.class);
         }
-    }
-
-    private DBManager getDBManager() {
-        if (databaseHelper == null) {
-            databaseHelper = OpenHelperManager.getHelper(context, DataBaseHelper.class);
-        }
-
-        return databaseHelper;
     }
 }

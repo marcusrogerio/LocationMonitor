@@ -5,5 +5,5 @@ package com.romio.locationtest.data;
  */
 
 public interface TrackingManager {
-    void sendTracking();
+    void commitTracking();
 }

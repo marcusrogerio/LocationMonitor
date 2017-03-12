@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 
 import com.romio.locationtest.data.AreasManager;
 import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.db.DBHelper;
 
 import java.util.List;
 
@@ -19,8 +20,10 @@ public class MainPresenter {
     private AreasManager areasManager;
     private Subscription subscription;
     private List<TargetAreaDto> areas;
+    private DBHelper dbHelper;
 
-    public MainPresenter(@NonNull AreasManager areasManager, @NonNull MainView view) {
+    public MainPresenter(DBHelper dbHelper, @NonNull AreasManager areasManager, @NonNull MainView view) {
+        this.dbHelper = dbHelper;
         this.view = view;
         this.areasManager = areasManager;
     }
@@ -50,10 +53,13 @@ public class MainPresenter {
     void onViewDestroying() {
         if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
+            subscription = null;
         }
 
+        dbHelper.release();
         view.clearAreas();
-        areasManager.releaseDBManager();
+        view = null;
+        areas = null;
     }
 
     boolean canLaunchService() {

@@ -6,7 +6,7 @@ import com.romio.locationtest.data.TargetAreaDto;
 import java.sql.SQLException;
 
 /**
- * Created by roman on 1/12/17.
+ * Created by roman on 1/12/17
  */
 
 public interface DBManager {

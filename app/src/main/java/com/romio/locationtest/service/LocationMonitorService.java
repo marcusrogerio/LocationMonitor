@@ -345,7 +345,7 @@ public class LocationMonitorService extends Service {
     private void shutdown() {
         targets = new ArrayList<>();
         LocationMonitorApp app = (LocationMonitorApp) getApplication();
-        app.getAreasManager().releaseDBManager();
+        app.getDBHelper().release();
 
         stopSelf(startId);
         WakeLocker.release();
