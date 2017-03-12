@@ -48,7 +48,8 @@ public class TargetAreaDto {
 
     public TargetAreaDto() { }
 
-    public TargetAreaDto(String name, double latitude, double longitude, int radius) {
+    public TargetAreaDto(String id, String name, double latitude, double longitude, int radius) {
+        this.id = id;
         this.areaName = name;
         this.latitude = latitude;
         this.longitude = longitude;

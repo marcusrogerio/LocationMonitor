@@ -259,30 +259,6 @@ public class LocationMonitorService extends Service {
         notifyUser(message, title);
     }
 
-    private static void saveCurrentArea(TargetAreaDto newTargetArea, Context context) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        if (newTargetArea == null) {
-            sharedPreferences
-                    .edit()
-                    .remove(CURRENT_AREA_LATITUDE)
-                    .remove(CURRENT_AREA_LONGITUDE)
-                    .remove(CURRENT_AREA_RADIUS)
-                    .remove(CURRENT_AREA_NAME)
-                    .remove(CURRENT_AREA_ID)
-                    .commit();
-
-        } else {
-            sharedPreferences
-                    .edit()
-                    .putFloat(CURRENT_AREA_LATITUDE, (float) newTargetArea.getLatitude())
-                    .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getLongitude())
-                    .putInt(CURRENT_AREA_RADIUS, newTargetArea.getRadius())
-                    .putString(CURRENT_AREA_NAME, newTargetArea.getAreaName())
-                    .putString(CURRENT_AREA_ID, newTargetArea.getId())
-                    .commit();
-        }
-    }
-
     private TargetAreaDto retrieveOldArea() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!sharedPreferences.contains(CURRENT_AREA_NAME)) {
@@ -293,20 +269,21 @@ public class LocationMonitorService extends Service {
         double longitude = sharedPreferences.getFloat(CURRENT_AREA_LONGITUDE, -1);
         int radius = sharedPreferences.getInt(CURRENT_AREA_RADIUS, -1);
         String name = sharedPreferences.getString(CURRENT_AREA_NAME, "");
+        String id = sharedPreferences.getString(CURRENT_AREA_ID, "");
 
-        return new TargetAreaDto(name, latitude, longitude, radius);
+        return new TargetAreaDto(id, name, latitude, longitude, radius);
     }
 
     private void notifyUserChangePosition(TargetAreaDto currentArea, Movement movement) {
-        String message = "Areas changed from " + currentArea.getAreaName() + " to " + movement.getName();
-        String title = "Areas changed";
+        String message = movement.getName() + " " + currentArea.getAreaName();
+        String title = "Area status changed";
 
         notifyUser(message, title);
     }
 
     private void notifyUserChangePosition(TargetAreaDto newAreaDto, @NonNull TargetAreaDto previuosAreaDto) {
-        String message = previuosAreaDto.getAreaName() + " " + newAreaDto.getAreaName();
-        String title = "Area status changed";
+        String message = "Areas changed from " + previuosAreaDto.getAreaName() + " to " + newAreaDto.getAreaName();
+        String title = "Areas changed";
 
         notifyUser(message, title);
     }
@@ -333,6 +310,30 @@ public class LocationMonitorService extends Service {
             notificationId = 0;
         } else {
             notificationId++;
+        }
+    }
+
+    private static void saveCurrentArea(TargetAreaDto newTargetArea, Context context) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (newTargetArea == null) {
+            sharedPreferences
+                    .edit()
+                    .remove(CURRENT_AREA_LATITUDE)
+                    .remove(CURRENT_AREA_LONGITUDE)
+                    .remove(CURRENT_AREA_RADIUS)
+                    .remove(CURRENT_AREA_NAME)
+                    .remove(CURRENT_AREA_ID)
+                    .commit();
+
+        } else {
+            sharedPreferences
+                    .edit()
+                    .putFloat(CURRENT_AREA_LATITUDE, (float) newTargetArea.getLatitude())
+                    .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getLongitude())
+                    .putInt(CURRENT_AREA_RADIUS, newTargetArea.getRadius())
+                    .putString(CURRENT_AREA_NAME, newTargetArea.getAreaName())
+                    .putString(CURRENT_AREA_ID, newTargetArea.getId())
+                    .commit();
         }
     }
 
