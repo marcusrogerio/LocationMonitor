@@ -50,6 +50,7 @@ public class LocationMonitorService extends Service {
     private static final String SERVICE_NAME = LocationMonitorService.class.getName();
 
     private static final String CURRENT_AREA_LATITUDE = "com.romio.locationtest.location.current.latItude";
+    private static final String CURRENT_AREA_ID = "com.romio.locationtest.location.current.id";
     private static final String CURRENT_AREA_LONGITUDE = "com.romio.locationtest.location.current.longitude";
     private static final String CURRENT_AREA_RADIUS = "com.romio.locationtest.location.current.radius";
     private static final String CURRENT_AREA_NAME = "com.romio.locationtest.location.current.name";
@@ -207,6 +208,7 @@ public class LocationMonitorService extends Service {
         } else {
             TargetAreaDto lastArea = retrieveOldArea();
             TargetAreaDto newTargetArea = getCurrentArea(location);
+
             String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
             Log.d(TAG, "Current area: " + area);
 
@@ -266,6 +268,7 @@ public class LocationMonitorService extends Service {
                     .remove(CURRENT_AREA_LONGITUDE)
                     .remove(CURRENT_AREA_RADIUS)
                     .remove(CURRENT_AREA_NAME)
+                    .remove(CURRENT_AREA_ID)
                     .commit();
 
         } else {
@@ -275,6 +278,7 @@ public class LocationMonitorService extends Service {
                     .putFloat(CURRENT_AREA_LONGITUDE, (float) newTargetArea.getLongitude())
                     .putInt(CURRENT_AREA_RADIUS, newTargetArea.getRadius())
                     .putString(CURRENT_AREA_NAME, newTargetArea.getAreaName())
+                    .putString(CURRENT_AREA_ID, newTargetArea.getId())
                     .commit();
         }
     }
