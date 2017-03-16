@@ -2,11 +2,13 @@ package com.romio.locationtest.data.net.entity;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
+
 /**
  * Created by roman on 3/7/17
  */
 
-public class GeneralResponse<T> {
+public class BaseResponse<T> implements Serializable {
 
     @SerializedName("status")
     private String status;

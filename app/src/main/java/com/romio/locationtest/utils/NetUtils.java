@@ -19,11 +19,19 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class NetUtils {
 
-    public static Retrofit getRetrofit() {
+    public static Retrofit getRxRetrofit() {
         return new Retrofit.Builder()
                 .baseUrl(NetConstants.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create( prepareGson() ))
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .client(getHttpClient())
+                .build();
+    }
+
+    public static Retrofit getRetrofit() {
+        return new Retrofit.Builder()
+                .baseUrl(NetConstants.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create( prepareGson() ))
                 .client(getHttpClient())
                 .build();
     }

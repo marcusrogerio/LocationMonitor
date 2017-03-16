@@ -61,7 +61,7 @@ public class LocationMonitorService extends Service {
     private static int notificationId = 0;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
-    private List<TargetAreaDto> targets;
+    private List<TargetAreaDto> targets = new ArrayList<>();
     private TrackingManager trackingManager;
     private boolean mRedelivery;
     private int startId;
@@ -140,8 +140,20 @@ public class LocationMonitorService extends Service {
     private void onHandleIntent(Intent intent) {
         AreasManager areasManager = ((LocationMonitorApp) getApplication()).getAreasManager();
         trackingManager = ((LocationMonitorApp) getApplication()).getTrackingManager();
-        targets = areasManager.getTargetAreasFromDB();
+
+        setTargetAreas(areasManager);
         getCurrentLocation();
+    }
+
+    private void setTargetAreas(AreasManager areasManager) {
+        List<TargetAreaDto> allAreas = areasManager.getTargetAreasFromDB();
+        if (allAreas != null && !allAreas.isEmpty()) {
+            for (TargetAreaDto targetAreaDto : allAreas) {
+                if (targetAreaDto.isEnabled()) {
+                    targets.add(targetAreaDto);
+                }
+            }
+        }
     }
 
     private void getCurrentLocation() {

@@ -2,13 +2,12 @@ package com.romio.locationtest.data.repository;
 
 import android.util.Log;
 
-import com.j256.ormlite.table.TableUtils;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.TargetAreaMapper;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.net.KolejkaZonesAPI;
-import com.romio.locationtest.data.net.entity.GeneralResponse;
+import com.romio.locationtest.data.net.entity.BaseResponse;
 import com.romio.locationtest.data.net.entity.ZoneEntity;
 import com.romio.locationtest.utils.NetUtils;
 import com.romio.locationtest.utils.NetworkManager;
@@ -68,11 +67,11 @@ public class AreasManagerImpl implements AreasManager {
 
         return kolejkaZonesAPI
                 .getZones()
-                .compose(RxUtils.<GeneralResponse<List<ZoneEntity>>>applySchedulers())
-                .map(new Func1<GeneralResponse<List<ZoneEntity>>, List<TargetAreaDto>>() {
+                .compose(RxUtils.<BaseResponse<List<ZoneEntity>>>applySchedulers())
+                .map(new Func1<BaseResponse<List<ZoneEntity>>, List<TargetAreaDto>>() {
                     @Override
-                    public List<TargetAreaDto> call(GeneralResponse<List<ZoneEntity>> listGeneralResponse) {
-                        List<TargetAreaDto> targetAreaDtos = TargetAreaMapper.map(listGeneralResponse.getData());
+                    public List<TargetAreaDto> call(BaseResponse<List<ZoneEntity>> listBaseResponse) {
+                        List<TargetAreaDto> targetAreaDtos = TargetAreaMapper.map(listBaseResponse.getData());
                         updateAreasInDB(targetAreaDtos);
                         return targetAreaDtos;
                     }
@@ -95,7 +94,7 @@ public class AreasManagerImpl implements AreasManager {
 
     private void initNetAPI() {
         if (kolejkaZonesAPI == null) {
-            kolejkaZonesAPI = NetUtils.getRetrofit().create(KolejkaZonesAPI.class);
+            kolejkaZonesAPI = NetUtils.getRxRetrofit().create(KolejkaZonesAPI.class);
         }
     }
 }

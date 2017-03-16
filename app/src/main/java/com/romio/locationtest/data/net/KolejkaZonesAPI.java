@@ -1,7 +1,7 @@
 package com.romio.locationtest.data.net;
 
 import com.romio.locationtest.data.net.entity.BulkTracking;
-import com.romio.locationtest.data.net.entity.GeneralResponse;
+import com.romio.locationtest.data.net.entity.BaseResponse;
 import com.romio.locationtest.data.net.entity.TrackingEntity;
 import com.romio.locationtest.data.net.entity.ZoneEntity;
 
@@ -24,14 +24,14 @@ public interface KolejkaZonesAPI {
     Observable<ZoneEntity> addZone(@Body ZoneEntity zone);
 
     @GET("zones")
-    Observable<GeneralResponse<List<ZoneEntity>>> getZones();
+    Observable<BaseResponse<List<ZoneEntity>>> getZones();
 
     @DELETE("zones/{zone_id}")
-    Observable<GeneralResponse<Object>> deleteZone(@Field("zone_id") String zoneId);
+    Observable<BaseResponse<Object>> deleteZone(@Field("zone_id") String zoneId);
 
     @POST("tracking")
-    Observable<GeneralResponse<TrackingEntity>> sendTracking(@Body TrackingEntity trackingEntity);
+    Observable<BaseResponse<TrackingEntity>> sendTracking(@Body TrackingEntity trackingEntity);
 
     @POST("bulk_tracking")
-    Observable<GeneralResponse<List<TrackingEntity>>> sendBulkTracking(@Body BulkTracking bulkTracking);
+    Observable<BaseResponse<List<TrackingEntity>>> sendBulkTracking(@Body BulkTracking bulkTracking);
 }
