@@ -4,7 +4,6 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationManager;
 
-import com.romio.locationtest.TargetArea;
 import com.romio.locationtest.data.TargetAreaDto;
 
 /**

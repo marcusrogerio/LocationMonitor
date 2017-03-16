@@ -1,8 +1,10 @@
-package com.romio.locationtest.data;
+package com.romio.locationtest.data.repository;
 
 import android.util.Log;
 
 import com.j256.ormlite.table.TableUtils;
+import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.TargetAreaMapper;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.net.KolejkaZonesAPI;
@@ -80,13 +82,14 @@ public class AreasManagerImpl implements AreasManager {
     private void updateAreasInDB(List<TargetAreaDto> targetAreaDtos) {
         DBManager dbManager = dbHelper.getDbManager();
         try {
-            TableUtils.clearTable(dbManager.getAreaDao().getConnectionSource(), TargetAreaDto.class);
+            dbManager.clearAreas();
 
             for (TargetAreaDto targetAreaDto : targetAreaDtos) {
                 dbManager.getAreaDao().createOrUpdate(targetAreaDto);
             }
         } catch (SQLException e) {
             Log.e(TAG, "Error adding area to DB", e);
+            throw new RuntimeException(e);
         }
     }
 

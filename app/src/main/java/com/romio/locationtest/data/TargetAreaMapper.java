@@ -3,7 +3,7 @@ package com.romio.locationtest.data;
 import android.support.annotation.Nullable;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.romio.locationtest.TargetArea;
+import com.romio.locationtest.ui.pojo.TargetArea;
 import com.romio.locationtest.data.net.entity.ZoneEntity;
 
 import java.util.ArrayList;

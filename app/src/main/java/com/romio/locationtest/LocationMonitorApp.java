@@ -11,15 +11,15 @@ import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.romio.locationtest.data.AreasManager;
-import com.romio.locationtest.data.AreasManagerImpl;
-import com.romio.locationtest.data.TrackingManager;
-import com.romio.locationtest.data.TrackingManagerImpl;
+import com.romio.locationtest.data.repository.AreasManager;
+import com.romio.locationtest.data.repository.AreasManagerImpl;
+import com.romio.locationtest.data.repository.TrackingManager;
+import com.romio.locationtest.data.repository.TrackingManagerImpl;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.db.DataBaseHelper;
-import com.romio.locationtest.data.net.entity.TrackingEntity;
 import com.romio.locationtest.service.LocationMonitorService;
+import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.utils.NetworkManager;
 import com.romio.locationtest.utils.NetworkManagerImpl;
 
@@ -98,7 +98,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public TrackingManager getTrackingManager() {
         if (trackingManager == null) {
-            trackingManager = new TrackingManagerImpl(this, networkManager);
+            trackingManager = new TrackingManagerImpl(this, networkManager, this);
         }
 
         return trackingManager;

@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.ui;
 
 import com.romio.locationtest.data.TargetAreaDto;
 

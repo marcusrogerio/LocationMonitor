@@ -4,7 +4,7 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.romio.locationtest.MainActivity">
+    tools:context="com.romio.locationtest.ui.MainActivity">
 
     <ProgressBar
         android:id="@+id/pb_progress"

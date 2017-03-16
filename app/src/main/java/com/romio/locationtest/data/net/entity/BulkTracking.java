@@ -13,6 +13,13 @@ public class BulkTracking {
     @SerializedName("data")
     private List<TrackingEntity> bulkTracking;
 
+    public BulkTracking() {
+    }
+
+    public BulkTracking(List<TrackingEntity> bulkTracking) {
+        this.bulkTracking = bulkTracking;
+    }
+
     public List<TrackingEntity> getBulkTracking() {
         return bulkTracking;
     }

@@ -1,4 +1,6 @@
-package com.romio.locationtest.data;
+package com.romio.locationtest.data.repository;
+
+import com.romio.locationtest.data.TargetAreaDto;
 
 import java.util.List;
 

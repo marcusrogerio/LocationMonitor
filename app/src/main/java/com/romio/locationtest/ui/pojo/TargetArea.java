@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.ui.pojo;
 
 import android.os.Parcel;
 import android.os.Parcelable;

@@ -1,8 +1,8 @@
-package com.romio.locationtest;
+package com.romio.locationtest.ui;
 
 import android.support.annotation.NonNull;
 
-import com.romio.locationtest.data.AreasManager;
+import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.data.db.DBHelper;
 

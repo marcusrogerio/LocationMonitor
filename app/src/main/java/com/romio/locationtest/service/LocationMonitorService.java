@@ -27,10 +27,11 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.romio.locationtest.LocationMonitorApp;
-import com.romio.locationtest.MainActivity;
+import com.romio.locationtest.data.repository.TrackingManager;
+import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.WakeLocker;
-import com.romio.locationtest.data.AreasManager;
+import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.utils.CalcUtils;
 
@@ -61,6 +62,7 @@ public class LocationMonitorService extends Service {
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
     private List<TargetAreaDto> targets;
+    private TrackingManager trackingManager;
     private boolean mRedelivery;
     private int startId;
 
@@ -137,6 +139,7 @@ public class LocationMonitorService extends Service {
 
     private void onHandleIntent(Intent intent) {
         AreasManager areasManager = ((LocationMonitorApp) getApplication()).getAreasManager();
+        trackingManager = ((LocationMonitorApp) getApplication()).getTrackingManager();
         targets = areasManager.getTargetAreasFromDB();
         getCurrentLocation();
     }
@@ -213,15 +216,18 @@ public class LocationMonitorService extends Service {
             Log.d(TAG, "Current area: " + area);
 
             if (lastArea == null && newTargetArea != null) {
-                notifyUserChangePosition(newTargetArea, LocationMonitorService.Movement.ENTER_AREA);
+                trackingManager.enterArea(newTargetArea, location);
+//                notifyUserChangePosition(newTargetArea, LocationMonitorService.Movement.ENTER_AREA);
             }
 
             if (lastArea != null && newTargetArea == null) {
-                notifyUserChangePosition(lastArea, LocationMonitorService.Movement.LEAVE_AREA);
+                trackingManager.leaveArea(lastArea, location);
+//                notifyUserChangePosition(lastArea, LocationMonitorService.Movement.LEAVE_AREA);
             }
 
             if (lastArea != null && newTargetArea != null && !lastArea.equals(newTargetArea)) {
-                notifyUserChangePosition(lastArea, newTargetArea);
+                trackingManager.changeArea(lastArea, newTargetArea, location);
+//                notifyUserChangePosition(lastArea, newTargetArea);
             }
 
             saveCurrentArea(newTargetArea, this);
@@ -241,13 +247,14 @@ public class LocationMonitorService extends Service {
             long areaMonitorInterval = getResources().getInteger(R.integer.area_monitor_time_interval) * 1000;
 
             if (currentMoment - lastUpdate >= areaMonitorInterval) {
-                notifyUserInAreaUpdate(targetArea, location);
+                trackingManager.wanderInArea(targetArea, location);
+//                notifyUserInAreaUpdate(targetArea, location);
                 preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
             }
 
         } else {
-            notifyUserInAreaUpdate(targetArea, location);
-
+//            notifyUserInAreaUpdate(targetArea, location);
+            trackingManager.wanderInArea(targetArea, location);
             preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
         }
     }

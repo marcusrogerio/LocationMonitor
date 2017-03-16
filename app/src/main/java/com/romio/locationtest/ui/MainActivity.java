@@ -1,4 +1,4 @@
-package com.romio.locationtest;
+package com.romio.locationtest.ui;
 
 import android.Manifest;
 import android.content.Context;
@@ -31,6 +31,8 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.romio.locationtest.LocationMonitorApp;
+import com.romio.locationtest.R;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.utils.CalcUtils;
 
