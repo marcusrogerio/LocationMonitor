@@ -120,19 +120,11 @@ public class TrackingManagerImpl implements TrackingManager {
                 oldTrackingDtos.add(trackingDto);
 
                 sendBulkTracking(oldTrackingDtos);
-                dbHelper.getDbManager().clearTracking();
-                dbHelper.release();
-
-                Log.d(TAG, "Successfully sent");
 
             } else {
                 Log.d(TAG, "DB doesn't contain tracking info, send only fresh info");
 
-                TrackingEntity trackingEntity = TrackingMapper.map(trackingDto);
-                makeCall(trackingEntity);
-
-
-                Log.d(TAG, "Successfully sent");
+                makeCall(trackingDto);
             }
 
         } catch (SQLException e) {
@@ -141,13 +133,15 @@ public class TrackingManagerImpl implements TrackingManager {
         }
     }
 
-    private void makeCall(TrackingEntity trackingEntity) {
+    private void makeCall(TrackingDto trackingDto) {
+        TrackingEntity trackingEntity = TrackingMapper.map(trackingDto);
         try {
             kolejkaTrackingAPI.sendTracking(trackingEntity).execute();
+            Log.d(TAG, "Successfully sent");
 
         } catch (IOException e) {
             Log.e(TAG, "Error making send tracking call", e);
-            throw new RuntimeException(e);
+            saveTrackingInDB(trackingDto);
         }
     }
 
@@ -157,10 +151,13 @@ public class TrackingManagerImpl implements TrackingManager {
 
         try {
             kolejkaTrackingAPI.sendBulkTracking(bulkTracking).execute();
+            Log.d(TAG, "Successfully sent");
+
+            dbHelper.getDbManager().clearTracking();
+            dbHelper.release();
 
         } catch (IOException e) {
             Log.e(TAG, "Error making send bulk tracking call", e);
-            throw new RuntimeException(e);
         }
     }
 
