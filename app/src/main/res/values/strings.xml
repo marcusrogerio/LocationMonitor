@@ -9,4 +9,7 @@
     <string name="location">Location</string>
     <string name="maps_api_key">AIzaSyCR92NpsvhdDbSiWxRh3IW-DfFfjIPS-2Q</string>
     <string name="launch">Launch</string>
+    <string name="info">info</string>
+    <string name="info_title">Info</string>
+    <string name="info_message_pattern">For testing purposes.\n\nYour id is %s</string>
 </resources>

@@ -2,6 +2,7 @@ package com.romio.locationtest.ui;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
@@ -12,6 +13,8 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -112,9 +115,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             return true;
 
+            case R.id.item_info: {
+                showInfoDialog();
+            }
+            return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void showInfoDialog() {
+        String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        String infoPattern = getResources().getString(R.string.info_message_pattern);
+        String message = String.format(infoPattern, androidId);
+
+        new AlertDialog.Builder(this).setCancelable(true)
+                .setTitle(R.string.info_title)
+                .setMessage(message)
+                .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .create()
+                .show();
     }
 
     @Override
