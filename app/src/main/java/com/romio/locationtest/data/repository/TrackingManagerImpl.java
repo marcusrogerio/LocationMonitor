@@ -117,9 +117,7 @@ public class TrackingManagerImpl implements TrackingManager {
                 Log.d(TAG, "DB contain tracking info, should send it also");
 
                 List<TrackingDto> oldTrackingDtos = getTrackingFromDB();
-                oldTrackingDtos.add(trackingDto);
-
-                sendBulkTracking(oldTrackingDtos);
+                sendBulkTracking(oldTrackingDtos, trackingDto);
 
             } else {
                 Log.d(TAG, "DB doesn't contain tracking info, send only fresh info");
@@ -145,7 +143,8 @@ public class TrackingManagerImpl implements TrackingManager {
         }
     }
 
-    private void sendBulkTracking(List<TrackingDto> oldTrackingDtos) {
+    private void sendBulkTracking(List<TrackingDto> oldTrackingDtos, TrackingDto trackingDto) {
+        oldTrackingDtos.add(trackingDto);
         List<TrackingEntity> trackingEntities = TrackingMapper.map(oldTrackingDtos);
         BulkTracking bulkTracking = new BulkTracking(trackingEntities);
 
@@ -158,6 +157,7 @@ public class TrackingManagerImpl implements TrackingManager {
 
         } catch (IOException e) {
             Log.e(TAG, "Error making send bulk tracking call", e);
+            saveTrackingInDB(trackingDto);
         }
     }
 
