@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * Created by roman on 3/8/17
@@ -32,6 +33,7 @@ public class TrackingManagerImpl implements TrackingManager {
     private DBHelper dbHelper;
     private KolejkaTrackingAPI kolejkaTrackingAPI;
     private String phoneId;
+    private TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
 
     public TrackingManagerImpl(Context context, NetworkManager networkManager, DBHelper dbHelper) {
         this.networkManager = networkManager;
@@ -41,7 +43,7 @@ public class TrackingManagerImpl implements TrackingManager {
 
     @Override
     public void enterArea(TargetAreaDto area, Location location) {
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(utcTimeZone);
 
         TrackingDto trackingDto = new TrackingDto();
         trackingDto.setLongitude(location.getLongitude());
@@ -56,7 +58,7 @@ public class TrackingManagerImpl implements TrackingManager {
 
     @Override
     public void leaveArea(TargetAreaDto area, Location location) {
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(utcTimeZone);
 
         TrackingDto trackingDto = new TrackingDto();
         trackingDto.setLongitude(location.getLongitude());
@@ -77,7 +79,7 @@ public class TrackingManagerImpl implements TrackingManager {
 
     @Override
     public void wanderInArea(TargetAreaDto area, Location location) {
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(utcTimeZone);
 
         TrackingDto trackingDto = new TrackingDto();
         trackingDto.setLongitude(location.getLongitude());
