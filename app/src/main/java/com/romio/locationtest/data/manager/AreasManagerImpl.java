@@ -1,4 +1,4 @@
-package com.romio.locationtest.data.repository;
+package com.romio.locationtest.data.manager;
 
 import android.util.Log;
 

@@ -22,8 +22,8 @@ android {
         applicationId "com.romio.locationtest"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 21
-        versionName "2.03"
+        versionCode 22
+        versionName "2.04"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -48,11 +48,13 @@ dependencies {
     compile 'com.squareup.retrofit2:retrofit:2.0.1'
     compile 'com.squareup.retrofit2:adapter-rxjava:2.0.1'
     compile 'com.squareup.retrofit2:converter-gson:2.0.1'
+    compile "com.firebase:firebase-jobdispatcher:0.5.2"
     compile 'com.google.android.gms:play-services-location:10.0.1'
     compile 'com.google.android.gms:play-services-maps:10.0.1'
     compile 'org.jetbrains:annotations-java5:15.0'
     compile "com.squareup.okhttp3:logging-interceptor:3.4.1"
     compile "io.reactivex:rxandroid:0.24.0"
+
     compile('com.crashlytics.sdk.android:crashlytics:2.6.5@aar') {
         transitive = true;
     }

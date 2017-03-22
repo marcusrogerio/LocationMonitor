@@ -1,9 +1,8 @@
-package com.romio.locationtest.data.repository;
+package com.romio.locationtest.data.manager;
 
 import android.location.Location;
 
 import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.data.TrackingDto;
 
 /**
  * Created by roman on 3/8/17

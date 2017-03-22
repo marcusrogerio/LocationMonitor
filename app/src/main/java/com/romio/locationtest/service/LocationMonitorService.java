@@ -27,11 +27,11 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.romio.locationtest.LocationMonitorApp;
-import com.romio.locationtest.data.repository.TrackingManager;
+import com.romio.locationtest.data.manager.TrackingManager;
 import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.R;
 import com.romio.locationtest.WakeLocker;
-import com.romio.locationtest.data.repository.AreasManager;
+import com.romio.locationtest.data.manager.AreasManager;
 import com.romio.locationtest.data.TargetAreaDto;
 import com.romio.locationtest.utils.CalcUtils;
 

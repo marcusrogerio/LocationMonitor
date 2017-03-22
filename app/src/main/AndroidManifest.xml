@@ -33,6 +33,14 @@
             android:name=".service.LocationMonitorService"
             android:process=":remote" />
 
+        <service
+            android:exported="false"
+            android:name=".UploadTrackingDataJobService">
+            <intent-filter>
+                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
+            </intent-filter>
+        </service>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/maps_api_key" />
@@ -40,7 +48,6 @@
             android:name="io.fabric.ApiKey"
             android:value="8d571a8db14e6c631ed89100bb9f4a9ddef723ef" />
     </application>
-
 
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

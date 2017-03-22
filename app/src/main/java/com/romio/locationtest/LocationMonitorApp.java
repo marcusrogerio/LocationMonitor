@@ -10,11 +10,18 @@ import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
+import com.firebase.jobdispatcher.Constraint;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
+import com.firebase.jobdispatcher.Lifetime;
+import com.firebase.jobdispatcher.RetryStrategy;
+import com.firebase.jobdispatcher.Trigger;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.romio.locationtest.data.repository.AreasManager;
-import com.romio.locationtest.data.repository.AreasManagerImpl;
-import com.romio.locationtest.data.repository.TrackingManager;
-import com.romio.locationtest.data.repository.TrackingManagerImpl;
+import com.romio.locationtest.data.manager.AreasManager;
+import com.romio.locationtest.data.manager.AreasManagerImpl;
+import com.romio.locationtest.data.manager.TrackingManager;
+import com.romio.locationtest.data.manager.TrackingManagerImpl;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.db.DataBaseHelper;
@@ -33,6 +40,8 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
     private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
+    private static final String LOCATION_DATA_UPLOAD = "com.romio.locationtest.location_data_upload";
+    private static final String JOB_TAG = LocationMonitorApp.class.getSimpleName();
 
     private AreasManager areasManager;
     private TrackingManager trackingManager;
@@ -49,6 +58,8 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
         locationMonitorOffset = getResources().getInteger(R.integer.location_monitor_time_offset);
         locationMonitorInterval = getResources().getInteger(R.integer.location_monitor_time_interval);
+
+        initUploadDataScheduler();
     }
 
     public void toggleLocationMonitorService(MainActivity mainActivity) {
@@ -72,6 +83,24 @@ public class LocationMonitorApp extends Application implements DBHelper {
     public boolean isLocationMonitorAlarmSet() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         return sharedPreferences.getBoolean(LOCATION_MONITOR_ALARM, false);
+    }
+
+    public void initUploadDataScheduler() {
+        if (!isDataUploadServiceSet()) {
+            FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
+            Job myJob = dispatcher.newJobBuilder()
+                    .setService(UploadTrackingDataJobService.class)
+                    .setTag(JOB_TAG)
+                    .setRecurring(true)
+                    .setLifetime(Lifetime.FOREVER)
+                    .setTrigger(Trigger.executionWindow(60, 180))
+                    .setReplaceCurrent(false)
+                    .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
+                    .setConstraints(Constraint.ON_ANY_NETWORK)
+                    .build();
+
+            dispatcher.mustSchedule(myJob);
+        }
     }
 
     private PendingIntent prepareLocationMonitorPendingIntent() {
@@ -131,5 +160,15 @@ public class LocationMonitorApp extends Application implements DBHelper {
             OpenHelperManager.releaseHelper();
             databaseHelper = null;
         }
+    }
+
+    private boolean isDataUploadServiceSet() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getBoolean(LOCATION_DATA_UPLOAD, false);
+    }
+
+    private void setDataUploadServiceState(boolean isSet) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences.edit().putBoolean(LOCATION_DATA_UPLOAD, isSet).commit();
     }
 }

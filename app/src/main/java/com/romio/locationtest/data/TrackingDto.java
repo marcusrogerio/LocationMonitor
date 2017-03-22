@@ -17,8 +17,12 @@ public class TrackingDto {
     private static final String TRACKING_TIME_STAMP_FIELD = "tracking_timestamp";
     private static final String LATITUDE_FIELD = "latitude";
     private static final String LONGITUDE_FIELD = "longitude";
+    private static final String ID_FIELD = "id";
 
-    @DatabaseField(id = true, columnName = TRACKING_ID_FIELD)
+    @DatabaseField(generatedId = true, allowGeneratedIdInsert = true)
+    private long id;
+
+    @DatabaseField(columnName = TRACKING_ID_FIELD)
     private String trackingId;
 
     @DatabaseField(columnName = DATA_TYPE_FIELD)
@@ -86,14 +90,17 @@ public class TrackingDto {
 
     @Override
     public int hashCode() {
-        return trackingId.hashCode();
+        String hashCodeSource = String.valueOf(trackingTimeStamp) + zoneId + dataType;
+        return hashCodeSource.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof TrackingDto) {
             TrackingDto ta2 = (TrackingDto) obj;
-            return TextUtils.equals(ta2.trackingId, this.trackingId);
+            return (TextUtils.equals(ta2.zoneId, this.zoneId) &&
+                    TextUtils.equals(ta2.dataType, this.dataType) &&
+                    ta2.trackingTimeStamp == this.trackingTimeStamp);
         }
         return false;
     }

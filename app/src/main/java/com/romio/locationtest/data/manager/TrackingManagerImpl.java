@@ -1,4 +1,4 @@
-package com.romio.locationtest.data.repository;
+package com.romio.locationtest.data.manager;
 
 import android.content.Context;
 import android.location.Location;
@@ -11,7 +11,6 @@ import com.romio.locationtest.data.TrackingDto;
 import com.romio.locationtest.data.TrackingMapper;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.net.KolejkaTrackingAPI;
-import com.romio.locationtest.data.net.entity.BulkTracking;
 import com.romio.locationtest.data.net.entity.TrackingEntity;
 import com.romio.locationtest.utils.NetUtils;
 import com.romio.locationtest.utils.NetworkManager;
@@ -19,7 +18,6 @@ import com.romio.locationtest.utils.NetworkManager;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Calendar;
-import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -113,24 +111,7 @@ public class TrackingManagerImpl implements TrackingManager {
 
     private void sendTracking(TrackingDto trackingDto) {
         initNetAPI();
-
-        try {
-            if (isTrackingInDB()) {
-                Log.d(TAG, "DB contain tracking info, should send it also");
-
-                List<TrackingDto> oldTrackingDtos = getTrackingFromDB();
-                sendBulkTracking(oldTrackingDtos, trackingDto);
-
-            } else {
-                Log.d(TAG, "DB doesn't contain tracking info, send only fresh info");
-
-                makeCall(trackingDto);
-            }
-
-        } catch (SQLException e) {
-            Log.e(TAG, "Error adding tracking to DB", e);
-            throw new RuntimeException(e);
-        }
+        makeCall(trackingDto);
     }
 
     private void makeCall(TrackingDto trackingDto) {
@@ -143,32 +124,6 @@ public class TrackingManagerImpl implements TrackingManager {
             Log.e(TAG, "Error making send tracking call", e);
             saveTrackingInDB(trackingDto);
         }
-    }
-
-    private void sendBulkTracking(List<TrackingDto> oldTrackingDtos, TrackingDto trackingDto) {
-        oldTrackingDtos.add(trackingDto);
-        List<TrackingEntity> trackingEntities = TrackingMapper.map(oldTrackingDtos);
-        BulkTracking bulkTracking = new BulkTracking(trackingEntities);
-
-        try {
-            kolejkaTrackingAPI.sendBulkTracking(bulkTracking).execute();
-            Log.d(TAG, "Successfully sent");
-
-            dbHelper.getDbManager().clearTracking();
-            dbHelper.release();
-
-        } catch (IOException e) {
-            Log.e(TAG, "Error making send bulk tracking call", e);
-            saveTrackingInDB(trackingDto);
-        }
-    }
-
-    private boolean isTrackingInDB() throws SQLException {
-        return dbHelper.getDbManager().getTrackingDao().countOf() > 0;
-    }
-
-    private List<TrackingDto> getTrackingFromDB() throws SQLException {
-        return dbHelper.getDbManager().getTrackingDao().queryForAll();
     }
 
     private void initNetAPI() {
