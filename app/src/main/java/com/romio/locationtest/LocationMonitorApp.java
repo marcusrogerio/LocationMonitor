@@ -17,6 +17,7 @@ import com.firebase.jobdispatcher.Job;
 import com.firebase.jobdispatcher.Lifetime;
 import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 import com.romio.locationtest.data.manager.AreasManager;
 import com.romio.locationtest.data.manager.AreasManagerImpl;
@@ -50,6 +51,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     private int locationMonitorOffset = 3000;
     private int locationMonitorInterval = 120000;
+    private GoogleApiClient googleApiClient;
 
     @Override
     public void onCreate() {
@@ -180,5 +182,13 @@ public class LocationMonitorApp extends Application implements DBHelper {
     private void setDataUploadServiceState(boolean isSet) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.edit().putBoolean(LOCATION_DATA_UPLOAD, isSet).apply();
+    }
+
+    public GoogleApiClient getGoogleApiClient() {
+        return googleApiClient;
+    }
+
+    public void setGoogleApiClient(GoogleApiClient googleApiClient) {
+        this.googleApiClient = googleApiClient;
     }
 }

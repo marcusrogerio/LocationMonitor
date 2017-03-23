@@ -21,6 +21,10 @@
         <activity
             android:name=".ui.MainActivity"
             android:launchMode="singleInstance"
+            android:screenOrientation="portrait"/>
+
+        <activity
+            android:name=".ui.SplashActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,10 +38,10 @@
             android:process=":remote" />
 
         <service
-            android:exported="false"
-            android:name=".UploadTrackingDataJobService">
+            android:name=".UploadTrackingDataJobService"
+            android:exported="false">
             <intent-filter>
-                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
+                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
             </intent-filter>
         </service>
 

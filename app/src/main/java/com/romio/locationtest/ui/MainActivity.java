@@ -309,4 +309,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     }
+
+    public static void startActivity(SplashActivity splashActivity) {
+
+    }
 }
