@@ -62,61 +62,6 @@ public class LocationMonitorApp extends Application implements DBHelper {
         initUploadDataScheduler();
     }
 
-    public void toggleLocationMonitorService(MainActivity mainActivity) {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
-
-        if (!isLocationMonitorAlarmSet()) {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
-
-            saveLocationMonitorAlarmWasSet(true);
-            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
-
-        } else {
-            alarmManager.cancel(pendingIntent);
-            saveLocationMonitorAlarmWasSet(false);
-            LocationMonitorService.clearLastArea(this);
-            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public boolean isLocationMonitorAlarmSet() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return sharedPreferences.getBoolean(LOCATION_MONITOR_ALARM, false);
-    }
-
-    public void initUploadDataScheduler() {
-        if (!isDataUploadServiceSet()) {
-            FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
-            Job myJob = dispatcher.newJobBuilder()
-                    .setService(UploadTrackingDataJobService.class)
-                    .setTag(JOB_TAG)
-                    .setRecurring(true)
-                    .setLifetime(Lifetime.FOREVER)
-                    .setTrigger(Trigger.executionWindow(60, 180))
-                    .setReplaceCurrent(false)
-                    .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
-                    .setConstraints(Constraint.ON_ANY_NETWORK)
-                    .build();
-
-            dispatcher.mustSchedule(myJob);
-        }
-    }
-
-    private PendingIntent prepareLocationMonitorPendingIntent() {
-        Intent intent = new Intent(getApplicationContext(), LocationMonitorService.class);
-
-        return PendingIntent.getService(this, LocationMonitorService.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    private void saveLocationMonitorAlarmWasSet(boolean isSet) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences
-                .edit()
-                .putBoolean(LOCATION_MONITOR_ALARM, isSet)
-                .commit();
-    }
-
     public AreasManager getAreasManager() {
         if (areasManager == null) {
             areasManager = new AreasManagerImpl(this, getNetworkManager());
@@ -162,6 +107,71 @@ public class LocationMonitorApp extends Application implements DBHelper {
         }
     }
 
+
+    /**
+     * location service section
+     */
+
+    public void toggleLocationMonitorService(MainActivity mainActivity) {
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
+
+        if (!isLocationMonitorAlarmSet()) {
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
+
+            saveLocationMonitorAlarmWasSet(true);
+            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
+
+        } else {
+            alarmManager.cancel(pendingIntent);
+            saveLocationMonitorAlarmWasSet(false);
+            LocationMonitorService.clearLastArea(this);
+            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public boolean isLocationMonitorAlarmSet() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return sharedPreferences.getBoolean(LOCATION_MONITOR_ALARM, false);
+    }
+
+    private PendingIntent prepareLocationMonitorPendingIntent() {
+        Intent intent = new Intent(getApplicationContext(), LocationMonitorService.class);
+
+        return PendingIntent.getService(this, LocationMonitorService.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    private void saveLocationMonitorAlarmWasSet(boolean isSet) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences
+                .edit()
+                .putBoolean(LOCATION_MONITOR_ALARM, isSet)
+                .commit();
+    }
+
+    /**
+     * data upload section
+     */
+    public void initUploadDataScheduler() {
+        if (!isDataUploadServiceSet()) {
+            FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
+            Job myJob = dispatcher.newJobBuilder()
+                    .setService(UploadTrackingDataJobService.class)
+                    .setTag(JOB_TAG)
+                    .setRecurring(true)
+                    .setLifetime(Lifetime.FOREVER)
+                    .setTrigger(Trigger.executionWindow(60, 180))
+                    .setReplaceCurrent(false)
+                    .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
+                    .setConstraints(Constraint.ON_ANY_NETWORK)
+                    .build();
+
+            dispatcher.mustSchedule(myJob);
+
+            setDataUploadServiceState(true);
+        }
+    }
+
     private boolean isDataUploadServiceSet() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         return preferences.getBoolean(LOCATION_DATA_UPLOAD, false);
@@ -169,6 +179,6 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     private void setDataUploadServiceState(boolean isSet) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        preferences.edit().putBoolean(LOCATION_DATA_UPLOAD, isSet).commit();
+        preferences.edit().putBoolean(LOCATION_DATA_UPLOAD, isSet).apply();
     }
 }

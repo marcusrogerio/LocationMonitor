@@ -12,4 +12,8 @@
     <!--in seconds-->
     <integer name="area_monitor_time_interval">300</integer>
 
+
+    <integer name="loitering_delay">5000</integer>
+    <integer name="notification_responsiveness">60000</integer>
+
 </resources>
