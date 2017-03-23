@@ -12,4 +12,6 @@
     <string name="info">info</string>
     <string name="info_title">Info</string>
     <string name="info_message_pattern">For testing purposes.\n\nYour id is %s</string>
+    <string name="result_success">Geofence(s) %s successfully</string>
+    <string name="result_failed">Failed to %s geofence(s)</string>
 </resources>

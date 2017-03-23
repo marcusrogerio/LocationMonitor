@@ -13,6 +13,7 @@ import android.support.v4.app.NotificationCompat;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 import com.romio.locationtest.ui.MainActivity;
+import com.romio.locationtest.ui.SplashActivity;
 
 /**
  * Created by roman on 3/23/17
@@ -60,7 +61,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
                         .setSound(alarmSound)
                         .setContentText(message);
 
-        Intent resultIntent = new Intent(this, MainActivity.class);
+        Intent resultIntent = new Intent(this, SplashActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);

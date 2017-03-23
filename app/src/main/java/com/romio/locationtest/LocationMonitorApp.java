@@ -26,6 +26,7 @@ import com.romio.locationtest.data.manager.TrackingManagerImpl;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.db.DataBaseHelper;
+import com.romio.locationtest.geofence.GeofenceManager;
 import com.romio.locationtest.service.LocationMonitorService;
 import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.utils.NetworkManager;
@@ -52,6 +53,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
     private int locationMonitorOffset = 3000;
     private int locationMonitorInterval = 120000;
     private GoogleApiClient googleApiClient;
+    private GeofenceManager geofenceManager;
 
     @Override
     public void onCreate() {
@@ -190,5 +192,17 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public void setGoogleApiClient(GoogleApiClient googleApiClient) {
         this.googleApiClient = googleApiClient;
+    }
+
+    public GeofenceManager getGeofenceManager() {
+        if (geofenceManager == null) {
+            geofenceManager = new GeofenceManager(this);
+        }
+        
+        return geofenceManager;
+    }
+
+    public void setGeofenceManager(GeofenceManager geofenceManager) {
+        this.geofenceManager = geofenceManager;
     }
 }

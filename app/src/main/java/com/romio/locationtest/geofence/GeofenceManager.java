@@ -8,7 +8,6 @@ import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.romio.locationtest.R;
 import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.data.db.DBManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +22,7 @@ public class GeofenceManager {
     private static final String TAG = GeofenceManager.class.getSimpleName();
     private int loiteringDelayInMilliseconds;
     private int notificationResponsivenessInMilliseconds;
+    private List<Geofence> geofenceList;
 
     private Context context;
 
@@ -37,18 +37,9 @@ public class GeofenceManager {
         notificationResponsivenessInMilliseconds = context.getResources().getInteger(R.integer.notification_responsiveness);
     }
 
-    public void launchGeofenceIfNeed(List<TargetAreaDto> geofenceAreas) {
-        if (!geofenceAreas.isEmpty()) {
-            List<Geofence> geofenceList = new ArrayList<>();
-            for (TargetAreaDto areaDto : geofenceAreas) {
-                addGeofence(geofenceList, areaDto.getLatitude(), areaDto.getLongitude(), areaDto.getRadius(), areaDto.getAreaName());
-            }
+    public GeofencingRequest getGeofencingRequest() {
+        addGeofence(LATITUDE, LONGITUDE, RADIUS, "GeofenceArea");
 
-            getGeofencingRequest(geofenceList);
-        }
-    }
-
-    public GeofencingRequest getGeofencingRequest(List<Geofence> geofenceList) {
         GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
         builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_EXIT | GeofencingRequest.INITIAL_TRIGGER_DWELL);
         builder.addGeofences(geofenceList);
@@ -60,7 +51,7 @@ public class GeofenceManager {
         return PendingIntent.getService(context, PENDING_INTENT_REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    private void addGeofence(List<Geofence> geofenceList, double latitude, double longitude, float radius, String areaId) {
+    private void addGeofence(double latitude, double longitude, float radius, String areaId) {
         geofenceList.add(new Geofence.Builder()
                 .setRequestId(areaId)
                 .setNotificationResponsiveness(notificationResponsivenessInMilliseconds)
