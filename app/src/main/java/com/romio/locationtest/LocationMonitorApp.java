@@ -21,6 +21,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 import com.romio.locationtest.data.manager.AreasManager;
 import com.romio.locationtest.data.manager.AreasManagerImpl;
+import com.romio.locationtest.data.manager.MockTrackingManager;
 import com.romio.locationtest.data.manager.TrackingManager;
 import com.romio.locationtest.data.manager.TrackingManagerImpl;
 import com.romio.locationtest.data.db.DBHelper;
@@ -76,7 +77,8 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public TrackingManager getTrackingManager() {
         if (trackingManager == null) {
-            trackingManager = new TrackingManagerImpl(this, networkManager, this);
+//            trackingManager = new TrackingManagerImpl(this, networkManager, this);
+            trackingManager = new MockTrackingManager(this); // TODO: 3/24/17 TESTING
         }
 
         return trackingManager;
@@ -116,22 +118,41 @@ public class LocationMonitorApp extends Application implements DBHelper {
      * location service section
      */
 
-    public void toggleLocationMonitorService(MainActivity mainActivity) {
+//    public void toggleLocationMonitorService(MainActivity mainActivity) {
+//        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+//        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
+//
+//        if (!isLocationMonitorAlarmSet()) {
+//            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
+//
+//            saveLocationMonitorAlarmWasSet(true);
+//            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
+//
+//        } else {
+//            alarmManager.cancel(pendingIntent);
+//            saveLocationMonitorAlarmWasSet(false);
+//            LocationMonitorService.clearLastArea(this);
+//            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
+//        }
+//    }
+
+    public void startLocationMonitorService() {
         AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
 
         if (!isLocationMonitorAlarmSet()) {
             alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
-
             saveLocationMonitorAlarmWasSet(true);
-            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
-
-        } else {
-            alarmManager.cancel(pendingIntent);
-            saveLocationMonitorAlarmWasSet(false);
-            LocationMonitorService.clearLastArea(this);
-            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void stopLocationMonitorService() {
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
+
+        alarmManager.cancel(pendingIntent);
+        saveLocationMonitorAlarmWasSet(false);
+        LocationMonitorService.clearLastArea(this);
     }
 
     public boolean isLocationMonitorAlarmSet() {

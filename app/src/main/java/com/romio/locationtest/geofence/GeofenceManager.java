@@ -7,7 +7,6 @@ import android.content.Intent;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.romio.locationtest.R;
-import com.romio.locationtest.data.TargetAreaDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,13 +21,13 @@ public class GeofenceManager {
     private static final String TAG = GeofenceManager.class.getSimpleName();
     private int loiteringDelayInMilliseconds;
     private int notificationResponsivenessInMilliseconds;
-    private List<Geofence> geofenceList;
+    private List<Geofence> geofenceList = new ArrayList<>();
 
     private Context context;
 
     public static final double LATITUDE = 49.830105;
     public static final double LONGITUDE = 24.006869;
-    public static final int RADIUS = 500;
+    public static final int RADIUS = 800;
 
     public GeofenceManager(Context context) {
         this.context = context;

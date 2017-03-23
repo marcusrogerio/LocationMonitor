@@ -66,20 +66,6 @@ public class LocationMonitorService extends Service {
     private boolean mRedelivery;
     private int startId;
 
-    private enum Movement {
-        ENTER_AREA("Enter area"), LEAVE_AREA("Leave area");
-
-        private String name;
-
-        Movement(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
-
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -229,17 +215,14 @@ public class LocationMonitorService extends Service {
 
             if (lastArea == null && newTargetArea != null) {
                 trackingManager.enterArea(newTargetArea, location);
-//                notifyUserChangePosition(newTargetArea, LocationMonitorService.Movement.ENTER_AREA);
             }
 
             if (lastArea != null && newTargetArea == null) {
                 trackingManager.leaveArea(lastArea, location);
-//                notifyUserChangePosition(lastArea, LocationMonitorService.Movement.LEAVE_AREA);
             }
 
             if (lastArea != null && newTargetArea != null && !lastArea.equals(newTargetArea)) {
                 trackingManager.changeArea(lastArea, newTargetArea, location);
-//                notifyUserChangePosition(lastArea, newTargetArea);
             }
 
             saveCurrentArea(newTargetArea, this);
@@ -260,22 +243,13 @@ public class LocationMonitorService extends Service {
 
             if (currentMoment - lastUpdate >= areaMonitorInterval) {
                 trackingManager.wanderInArea(targetArea, location);
-//                notifyUserInAreaUpdate(targetArea, location);
                 preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
             }
 
         } else {
-//            notifyUserInAreaUpdate(targetArea, location);
             trackingManager.wanderInArea(targetArea, location);
             preferences.edit().putLong(TIME_INSIDE_AREA_UPDATE, currentMoment).commit();
         }
-    }
-
-    private void notifyUserInAreaUpdate(TargetAreaDto targetArea, Location location) {
-        String title = "Presence in Area";
-        String message = targetArea.getAreaName() + ".\n Latitude: " + location.getLatitude() + "\nLongitude: " + location.getLongitude();
-
-        notifyUser(message, title);
     }
 
     private TargetAreaDto retrieveOldArea() {
@@ -291,20 +265,6 @@ public class LocationMonitorService extends Service {
         String id = sharedPreferences.getString(CURRENT_AREA_ID, "");
 
         return new TargetAreaDto(id, name, latitude, longitude, radius);
-    }
-
-    private void notifyUserChangePosition(TargetAreaDto currentArea, Movement movement) {
-        String message = movement.getName() + " " + currentArea.getAreaName();
-        String title = "Area status changed";
-
-        notifyUser(message, title);
-    }
-
-    private void notifyUserChangePosition(TargetAreaDto newAreaDto, @NonNull TargetAreaDto previuosAreaDto) {
-        String message = "Areas changed from " + previuosAreaDto.getAreaName() + " to " + newAreaDto.getAreaName();
-        String title = "Areas changed";
-
-        notifyUser(message, title);
     }
 
     private void notifyUser(String message, String title) {

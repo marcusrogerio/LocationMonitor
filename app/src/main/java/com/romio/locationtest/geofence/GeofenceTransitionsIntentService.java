@@ -12,6 +12,7 @@ import android.support.v4.app.NotificationCompat;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
+import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.ui.SplashActivity;
 
@@ -31,6 +32,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        LocationMonitorApp app = (LocationMonitorApp) getApplication();
+
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             notifyUser("Error code: " + geofencingEvent.getErrorCode(), "Location Monitor Error");
@@ -40,11 +43,15 @@ public class GeofenceTransitionsIntentService extends IntentService {
                 case Geofence.GEOFENCE_TRANSITION_DWELL: {
                     String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
                     notifyUser("Entered " + areaName, "Location Monitor");
+
+                    app.startLocationMonitorService();
                 }
                 break;
                 case Geofence.GEOFENCE_TRANSITION_EXIT: {
                     String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
                     notifyUser("Exited " + areaName, "Location Monitor");
+
+                    app.stopLocationMonitorService();
                 }
                 break;
             }

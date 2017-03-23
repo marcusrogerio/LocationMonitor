@@ -122,12 +122,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             case R.id.item_launch: {
                 if (presenter.canLaunchService()) {
 
-                    if (isGeofencing()) {
-                        stopGeofencing();
-                    } else {
-                        startGeofencing();
-                    }
-
+//                    if (isGeofencing()) {
+//                        stopGeofencing();
+//                    } else {
+//                        startGeofencing();
+//                    }
+//
 //                    toggleLocationService();
                 } else {
                     Toast.makeText(MainActivity.this, "Can't start service yet", Toast.LENGTH_SHORT).show();
@@ -238,9 +238,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void toggleLocationService() {
-        ((LocationMonitorApp) getApplication()).toggleLocationMonitorService(this);
-    }
+//    private void toggleLocationService() {
+//        ((LocationMonitorApp) getApplication()).toggleLocationMonitorService();
+//    }
 
     private boolean verifyGooglePlayServices() {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
