@@ -22,7 +22,6 @@ public class MainPresenter {
     private MainView view;
     private AreasManager areasManager;
     private Subscription loadTargetAreasSubscription;
-    private List<TargetAreaDto> areas;
     private DBHelper dbHelper;
 
     public MainPresenter(DBHelper dbHelper, @NonNull AreasManager areasManager, @NonNull MainView view) {
@@ -44,8 +43,7 @@ public class MainPresenter {
                     }
                 }).subscribe(new Observer<List<TargetAreaDto>>() {
                     @Override
-                    public void onCompleted() {
-                    }
+                    public void onCompleted() { }
 
                     @Override
                     public void onError(Throwable e) {
@@ -57,7 +55,6 @@ public class MainPresenter {
                     @Override
                     public void onNext(List<TargetAreaDto> targetAreaDtos) {
                         if (view != null) {
-                            areas = targetAreaDtos;
                             view.onAreasLoaded(targetAreaDtos);
                         }
                     }
@@ -73,11 +70,6 @@ public class MainPresenter {
         dbHelper.release();
         view.clearAreas();
         view = null;
-        areas = null;
-    }
-
-    boolean canLaunchService() {
-        return areas != null && !areas.isEmpty();
     }
 
     private TargetAreaDto getGeofenceArea() {

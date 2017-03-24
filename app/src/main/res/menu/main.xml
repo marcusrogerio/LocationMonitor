@@ -8,9 +8,4 @@
         android:title="@string/info"
         app:showAsAction="always" />
 
-    <item
-        android:id="@+id/item_launch"
-        android:icon="@drawable/ic_play_24dp"
-        android:title="@string/launch"
-        app:showAsAction="always" />
 </menu>

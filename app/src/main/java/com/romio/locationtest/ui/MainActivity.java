@@ -4,18 +4,15 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -30,7 +27,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.ResolvingResultCallbacks;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -51,8 +47,6 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, MainView {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String SERVICE_IS_RUNNING = "com.romio.locationtest.service.is.running";
-
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
@@ -63,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap map;
     private SupportMapFragment mapFragment;
     private ProgressBar progressBar;
-    private MenuItem itemPlayStop;
     private LocationMonitorApp app;
 
     private int zoom;
@@ -110,32 +103,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main, menu);
 
-        itemPlayStop = menu.findItem(R.id.item_launch);
-        updateMenuItemState();
-
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.item_launch: {
-                if (presenter.canLaunchService()) {
-
-//                    if (isGeofencing()) {
-//                        stopGeofencing();
-//                    } else {
-//                        startGeofencing();
-//                    }
-//
-//                    toggleLocationService();
-                } else {
-                    Toast.makeText(MainActivity.this, "Can't start service yet", Toast.LENGTH_SHORT).show();
-                }
-
-                updateMenuItemState();
-            }
-            return true;
 
             case R.id.item_info: {
                 showInfoDialog();
@@ -211,36 +184,43 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void permissionsGranted() {
-        checkLocationEnabled();
+    @Override
+    public void addArea(TargetAreaDto targetArea) {
+        LatLng center = new LatLng(targetArea.getLatitude(), targetArea.getLongitude());
+
+        map.addMarker(new MarkerOptions()
+                .position(center)
+                .title(targetArea.getAreaName()));
+
+        map.addCircle(new CircleOptions()
+                .center(center)
+                .radius(targetArea.getRadius())
+                .strokeColor(boundColor)
+                .fillColor(areaFillColor));
     }
 
-    private void initValues() {
-        zoom = getResources().getInteger(R.integer.zoom);
-        areaFillColor = ActivityCompat.getColor(this, R.color.area_fill_color);
-        boundColor = ActivityCompat.getColor(this, R.color.bound_color);
-    }
-
-    private void onLocationEnabled() {
-        mapFragment.getMapAsync(this);
-        canStartService = true;
-
-        if (!isGeofencing()) {
-            startGeofencing();
+    @Override
+    public void clearAreas() {
+        if (map != null) {
+            map.clear();
         }
     }
 
-    private void updateMenuItemState() {
-        if (((LocationMonitorApp) getApplication()).isLocationMonitorAlarmSet()) {
-            itemPlayStop.setIcon(R.drawable.ic_stop_24dp);
-        } else {
-            itemPlayStop.setIcon(R.drawable.ic_play_24dp);
-        }
+    @Override
+    public void showError(String message) {
+        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
     }
 
-//    private void toggleLocationService() {
-//        ((LocationMonitorApp) getApplication()).toggleLocationMonitorService();
-//    }
+    @Override
+    public void onAreasLoaded(List<TargetAreaDto> targetAreaDtos) {
+        targetAreaDtos.add(new TargetAreaDto("gefenceArea", "gefenceArea", GeofenceManager.LATITUDE, GeofenceManager.LONGITUDE, GeofenceManager.RADIUS));
+
+        for (TargetAreaDto targetArea : targetAreaDtos) {
+            if (targetArea.isEnabled()) {
+                addArea(targetArea);
+            }
+        }
+    }
 
     private boolean verifyGooglePlayServices() {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
@@ -256,6 +236,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             return false;
         }
         return true;
+    }
+
+    private void permissionsGranted() {
+        checkLocationEnabled();
+    }
+
+    private void initValues() {
+        zoom = getResources().getInteger(R.integer.zoom);
+        areaFillColor = ActivityCompat.getColor(this, R.color.area_fill_color);
+        boundColor = ActivityCompat.getColor(this, R.color.bound_color);
+    }
+
+    private void onLocationEnabled() {
+        mapFragment.getMapAsync(this);
+        canStartService = true;
+
+        startGeofencingIfNotStarted();
     }
 
     private void verifyPermissions() {
@@ -300,72 +297,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    @Override
-    public void addArea(TargetAreaDto targetArea) {
-        LatLng center = new LatLng(targetArea.getLatitude(), targetArea.getLongitude());
-
-        map.addMarker(new MarkerOptions()
-                .position(center)
-                .title(targetArea.getAreaName()));
-
-        map.addCircle(new CircleOptions()
-                .center(center)
-                .radius(targetArea.getRadius())
-                .strokeColor(boundColor)
-                .fillColor(areaFillColor));
-    }
-
-    @Override
-    public void clearAreas() {
-        if (map != null) {
-            map.clear();
-        }
-    }
-
-    @Override
-    public void showError(String message) {
-        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onAreasLoaded(List<TargetAreaDto> targetAreaDtos) {
-        targetAreaDtos.add(new TargetAreaDto("gefenceArea", "gefenceArea", GeofenceManager.LATITUDE, GeofenceManager.LONGITUDE, GeofenceManager.RADIUS));
-
-        for (TargetAreaDto targetArea : targetAreaDtos) {
-            if (targetArea.isEnabled()) {
-                addArea(targetArea);
-            }
-        }
-    }
-
     /**
      * Utils code
      */
 
-    private void startGeofencing() {
+    private void startGeofencingIfNotStarted() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(getApplicationContext(), "Location permission required", Toast.LENGTH_LONG).show();
             return;
         }
 
-        LocationServices.GeofencingApi.addGeofences(
-                app.getGoogleApiClient(),
-                app.getGeofenceManager().getGeofencingRequest(),
-                app.getGeofenceManager().getGeofencePendingIntent()
-        ).setResultCallback(getGeofenceAPIResultCallback(true));
+        app.getGeofenceManager().startGeofencingIfNotStarted(getGeofenceAPIResultCallback(true));
 
         Toast.makeText(getApplicationContext(), "Geofencing started", Toast.LENGTH_SHORT).show();
-        setGeofensingStatus(true);
     }
 
-    private void stopGeofencing() {
-        LocationServices.GeofencingApi.removeGeofences(
-                app.getGoogleApiClient(),
-                app.getGeofenceManager().getGeofencePendingIntent()
-        ).setResultCallback(getGeofenceAPIResultCallback(false));
+    public void stopGeofencing() {
+        app.getGeofenceManager().stopGeofencing(getGeofenceAPIResultCallback(true));
 
         Toast.makeText(getApplicationContext(), "Geofencing stopped", Toast.LENGTH_SHORT).show();
-        setGeofensingStatus(false);
     }
 
     @NonNull
@@ -391,16 +341,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         };
     }
 
-    public boolean isGeofencing() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return sharedPreferences.getBoolean(SERVICE_IS_RUNNING, false);
-    }
 
-    private void setGeofensingStatus(boolean isRunning) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences
-                .edit()
-                .putBoolean(SERVICE_IS_RUNNING, isRunning)
-                .commit();
-    }
 }

@@ -117,25 +117,6 @@ public class LocationMonitorApp extends Application implements DBHelper {
     /**
      * location service section
      */
-
-//    public void toggleLocationMonitorService(MainActivity mainActivity) {
-//        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-//        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
-//
-//        if (!isLocationMonitorAlarmSet()) {
-//            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
-//
-//            saveLocationMonitorAlarmWasSet(true);
-//            Toast.makeText(mainActivity, "Start listening for updates", Toast.LENGTH_SHORT).show();
-//
-//        } else {
-//            alarmManager.cancel(pendingIntent);
-//            saveLocationMonitorAlarmWasSet(false);
-//            LocationMonitorService.clearLastArea(this);
-//            Toast.makeText(mainActivity, "Stop listening for updates", Toast.LENGTH_SHORT).show();
-//        }
-//    }
-
     public void startLocationMonitorService() {
         AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
