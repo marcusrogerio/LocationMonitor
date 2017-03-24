@@ -13,6 +13,7 @@ import android.support.v4.app.NotificationCompat;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 import com.romio.locationtest.LocationMonitorApp;
+import com.romio.locationtest.R;
 import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.ui.SplashActivity;
 
@@ -62,7 +63,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
-                        .setSmallIcon(android.R.drawable.btn_dialog)
+                        .setSmallIcon(R.drawable.ic_global_18dp)
                         .setContentTitle(title)
                         .setLights(Color.BLUE, 500, 500)
                         .setSound(alarmSound)
