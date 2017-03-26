@@ -1,9 +1,10 @@
-package com.romio.locationtest;
+package com.romio.locationtest.service;
 
 import android.util.Log;
 
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
+import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.data.TrackingDto;
 import com.romio.locationtest.data.TrackingMapper;
 import com.romio.locationtest.data.db.DBHelper;
@@ -13,7 +14,6 @@ import com.romio.locationtest.data.net.entity.BulkTracking;
 import com.romio.locationtest.data.net.entity.TrackingEntity;
 import com.romio.locationtest.utils.NetUtils;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 

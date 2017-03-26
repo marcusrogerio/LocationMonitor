@@ -1,7 +1,9 @@
-package com.romio.locationtest;
+package com.romio.locationtest.utils;
 
 import android.content.Context;
 import android.os.PowerManager;
+
+import com.romio.locationtest.LocationMonitorApp;
 
 /**
  * Created by roman on 1/26/17

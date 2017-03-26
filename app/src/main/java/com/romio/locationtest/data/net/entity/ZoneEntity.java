@@ -37,6 +37,17 @@ public class ZoneEntity {
     @SerializedName("name")
     private String name;
 
+    @SerializedName("zone_type")
+    private String zoneType;
+
+    public String getZoneType() {
+        return zoneType;
+    }
+
+    public void setZoneType(String zoneType) {
+        this.zoneType = zoneType;
+    }
+
     public int getRadius() {
         return radius;
     }

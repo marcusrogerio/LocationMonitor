@@ -2,17 +2,14 @@ package com.romio.locationtest.ui;
 
 import android.support.annotation.NonNull;
 
-import com.romio.locationtest.data.manager.AreasManager;
-import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.AreaDto;
 import com.romio.locationtest.data.db.DBHelper;
-import com.romio.locationtest.geofence.GeofenceManager;
+import com.romio.locationtest.data.repository.AreasManager;
 
 import java.util.List;
 
-import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
-import rx.functions.Func1;
 
 /**
  * Created by roman on 3/8/17
@@ -32,16 +29,8 @@ public class MainPresenter {
 
     void loadTargets() {
         loadTargetAreasSubscription = areasManager
-                .loadTargetAreas()
-                .flatMap(new Func1<List<TargetAreaDto>, Observable<List<TargetAreaDto>>>() {
-                    @Override
-                    public Observable<List<TargetAreaDto>> call(List<TargetAreaDto> targetAreaDtos) {
-                        TargetAreaDto targetAreaDto = getGeofenceArea();
-                        targetAreaDtos.add(targetAreaDto);
-
-                        return Observable.just(targetAreaDtos);
-                    }
-                }).subscribe(new Observer<List<TargetAreaDto>>() {
+                .loadAllAreas()
+                .subscribe(new Observer<List<AreaDto>>() {
                     @Override
                     public void onCompleted() { }
 
@@ -53,9 +42,9 @@ public class MainPresenter {
                     }
 
                     @Override
-                    public void onNext(List<TargetAreaDto> targetAreaDtos) {
+                    public void onNext(List<AreaDto> areaDtos) {
                         if (view != null) {
-                            view.onAreasLoaded(targetAreaDtos);
+                            view.onAreasLoaded(areaDtos);
                         }
                     }
                 });
@@ -70,16 +59,5 @@ public class MainPresenter {
         dbHelper.release();
         view.clearAreas();
         view = null;
-    }
-
-    private TargetAreaDto getGeofenceArea() {
-        TargetAreaDto targetAreaDto = new TargetAreaDto();
-        targetAreaDto.setRadius(GeofenceManager.RADIUS);
-        targetAreaDto.setEnabled(true);
-        targetAreaDto.setAreaName("Geofence area");
-        targetAreaDto.setLatitude(GeofenceManager.LATITUDE);
-        targetAreaDto.setLongitude(GeofenceManager.LONGITUDE);
-
-        return targetAreaDto;
     }
 }

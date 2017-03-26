@@ -3,7 +3,7 @@ package com.romio.locationtest.data;
 import android.support.annotation.Nullable;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.romio.locationtest.ui.pojo.TargetArea;
+import com.romio.locationtest.ui.pojo.Area;
 import com.romio.locationtest.data.net.entity.ZoneEntity;
 
 import java.util.ArrayList;
@@ -15,89 +15,101 @@ import java.util.List;
 
 public class TargetAreaMapper {
 
+    private static final String ZONE_TYPE_CONTROL = "control";
+    private static final String ZONE_TYPE_CHECK_POINT = "checkpoint";
+
     @Nullable
-    public static TargetArea map(@Nullable TargetAreaDto targetAreaDto) {
-        if (targetAreaDto == null) {
+    public static Area map(@Nullable AreaDto areaDto) {
+        if (areaDto == null) {
             return null;
         }
 
-        TargetArea targetArea = new TargetArea();
-        targetArea.setAreaCenter(new LatLng(targetAreaDto.getLatitude(), targetAreaDto.getLongitude()));
-        targetArea.setAreaName(targetAreaDto.getAreaName());
-        targetArea.setRadius(targetAreaDto.getRadius());
+        Area area = new Area();
+        area.setAreaCenter(new LatLng(areaDto.getLatitude(), areaDto.getLongitude()));
+        area.setAreaName(areaDto.getAreaName());
+        area.setRadius(areaDto.getRadius());
+        area.setZoneType(areaDto.getZoneType());
 
-        return targetArea;
+        return area;
     }
 
-    public static ArrayList<TargetArea> mapFromDto(@Nullable List<TargetAreaDto> targetAreaDtoList) {
-        if (targetAreaDtoList == null || targetAreaDtoList.isEmpty()) {
+    public static ArrayList<Area> mapFromDto(@Nullable List<AreaDto> areaDtoList) {
+        if (areaDtoList == null || areaDtoList.isEmpty()) {
             return new ArrayList<>();
         }
 
-        ArrayList<TargetArea> targetAreas = new ArrayList<>();
-        for (TargetAreaDto targetAreaDto : targetAreaDtoList) {
-            targetAreas.add( map(targetAreaDto) );
+        ArrayList<Area> areas = new ArrayList<>();
+        for (AreaDto areaDto : areaDtoList) {
+            areas.add(map(areaDto));
         }
 
-        return targetAreas;
+        return areas;
     }
 
     @Nullable
-    public static TargetAreaDto map(@Nullable TargetArea targetArea) {
-        if (targetArea == null) {
+    public static AreaDto map(@Nullable Area area) {
+        if (area == null) {
             return null;
         }
 
-        TargetAreaDto targetAreaDto = new TargetAreaDto();
-        targetAreaDto.setLatitude(targetArea.getAreaCenter().latitude);
-        targetAreaDto.setLongitude(targetArea.getAreaCenter().longitude);
-        targetAreaDto.setAreaName(targetArea.getAreaName());
-        targetAreaDto.setRadius(targetArea.getRadius());
+        AreaDto areaDto = new AreaDto();
+        areaDto.setLatitude(area.getAreaCenter().latitude);
+        areaDto.setLongitude(area.getAreaCenter().longitude);
+        areaDto.setAreaName(area.getAreaName());
+        areaDto.setRadius(area.getRadius());
+        areaDto.setZoneType(area.getZoneType());
 
-        return targetAreaDto;
+        return areaDto;
     }
 
-    public static ArrayList<TargetAreaDto> mapToDto(@Nullable List<TargetArea> targetAreaList) {
-        if (targetAreaList == null || targetAreaList.isEmpty()) {
+    public static ArrayList<AreaDto> mapToDto(@Nullable List<Area> areaList) {
+        if (areaList == null || areaList.isEmpty()) {
             return new ArrayList<>();
         }
 
-        ArrayList<TargetAreaDto> targetAreaDtos = new ArrayList<>();
-        for (TargetArea targetArea : targetAreaList) {
-            targetAreaDtos.add( map(targetArea) );
+        ArrayList<AreaDto> areaDtos = new ArrayList<>();
+        for (Area area : areaList) {
+            areaDtos.add(map(area));
         }
 
-        return targetAreaDtos;
+        return areaDtos;
     }
 
-    public static TargetAreaDto map(@Nullable ZoneEntity zoneEntity) {
+    public static AreaDto map(@Nullable ZoneEntity zoneEntity) {
         if (zoneEntity == null) {
             return null;
         }
 
-        TargetAreaDto targetAreaDto = new TargetAreaDto();
-        targetAreaDto.setAreaName(zoneEntity.getName());
-        targetAreaDto.setDateCreated(zoneEntity.getDateCreated());
-        targetAreaDto.setDescription(zoneEntity.getDescription());
-        targetAreaDto.setEnabled(zoneEntity.isEnabled());
-        targetAreaDto.setId(zoneEntity.getId());
-        targetAreaDto.setLatitude(zoneEntity.getLatitude());
-        targetAreaDto.setLongitude(zoneEntity.getLongitude());
-        targetAreaDto.setRadius(zoneEntity.getRadius());
+        AreaDto areaDto = new AreaDto();
+        areaDto.setAreaName(zoneEntity.getName());
+        areaDto.setDateCreated(zoneEntity.getDateCreated());
+        areaDto.setDescription(zoneEntity.getDescription());
+        areaDto.setEnabled(zoneEntity.isEnabled());
+        areaDto.setId(zoneEntity.getId());
+        areaDto.setLatitude(zoneEntity.getLatitude());
+        areaDto.setLongitude(zoneEntity.getLongitude());
+        areaDto.setRadius(zoneEntity.getRadius());
 
-        return targetAreaDto;
+        if (ZONE_TYPE_CONTROL.equals(zoneEntity.getZoneType())) {
+            areaDto.setZoneType(ZoneType.CONTROL);
+
+        } else if (ZONE_TYPE_CHECK_POINT.equals(zoneEntity.getZoneType())) {
+            areaDto.setZoneType(ZoneType.CHECKPOINT);
+        }
+
+        return areaDto;
     }
 
-    public static List<TargetAreaDto> map(@Nullable List<ZoneEntity> zoneEntities) {
+    public static List<AreaDto> map(@Nullable List<ZoneEntity> zoneEntities) {
         if (zoneEntities == null || zoneEntities.isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<TargetAreaDto> targetAreaDtos = new ArrayList<>(zoneEntities.size());
+        List<AreaDto> areaDtos = new ArrayList<>(zoneEntities.size());
         for (ZoneEntity zoneEntity : zoneEntities) {
-            targetAreaDtos.add( map(zoneEntity) );
+            areaDtos.add(map(zoneEntity));
         }
 
-        return targetAreaDtos;
+        return areaDtos;
     }
 }

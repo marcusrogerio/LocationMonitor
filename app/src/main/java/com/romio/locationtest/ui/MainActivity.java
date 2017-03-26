@@ -25,8 +25,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.ResolvingResultCallbacks;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -37,9 +35,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.R;
-import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.geofence.GeofenceManager;
-import com.romio.locationtest.utils.CalcUtils;
+import com.romio.locationtest.data.AreaDto;
+import com.romio.locationtest.utils.LocationUtils;
 
 import java.util.List;
 
@@ -50,18 +47,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final int PERMISSION_REQUEST_CODE = 107;
     private static final int REQUEST_ENABLE_LOCATION = 102;
-    private static final int GEOFENCE_REQUEST_CODE = 106;
 
     private MainPresenter presenter;
 
     private GoogleMap map;
     private SupportMapFragment mapFragment;
     private ProgressBar progressBar;
-    private LocationMonitorApp app;
 
     private int zoom;
-    private int areaFillColor;
-    private int boundColor;
+    private int checkpointAreaFillColor;
+    private int checkpointBoundColor;
+    private int controlAreaFillColor;
+    private int controlBoundColor;
 
     boolean canStartService = false;
 
@@ -76,8 +73,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        app = (LocationMonitorApp) getApplication();
-
+        LocationMonitorApp app = (LocationMonitorApp) getApplication();
         presenter = new MainPresenter(app.getDBHelper(), app.getAreasManager(), this);
 
         initValues();
@@ -162,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_LOCATION) {
-            if (CalcUtils.isLocationEnabled(this)) {
+            if (LocationUtils.isLocationEnabled(this)) {
                 onLocationEnabled();
             }
         } else {
@@ -185,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void addArea(TargetAreaDto targetArea) {
+    public void addArea(AreaDto targetArea) {
         LatLng center = new LatLng(targetArea.getLatitude(), targetArea.getLongitude());
 
         map.addMarker(new MarkerOptions()
@@ -195,8 +191,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map.addCircle(new CircleOptions()
                 .center(center)
                 .radius(targetArea.getRadius())
-                .strokeColor(boundColor)
-                .fillColor(areaFillColor));
+                .strokeColor(checkpointBoundColor)
+                .fillColor(checkpointAreaFillColor));
     }
 
     @Override
@@ -212,10 +208,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void onAreasLoaded(List<TargetAreaDto> targetAreaDtos) {
-        targetAreaDtos.add(new TargetAreaDto("gefenceArea", "gefenceArea", GeofenceManager.LATITUDE, GeofenceManager.LONGITUDE, GeofenceManager.RADIUS));
-
-        for (TargetAreaDto targetArea : targetAreaDtos) {
+    public void onAreasLoaded(List<AreaDto> areaDtos) {
+        for (AreaDto targetArea : areaDtos) {
             if (targetArea.isEnabled()) {
                 addArea(targetArea);
             }
@@ -244,15 +238,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void initValues() {
         zoom = getResources().getInteger(R.integer.zoom);
-        areaFillColor = ActivityCompat.getColor(this, R.color.area_fill_color);
-        boundColor = ActivityCompat.getColor(this, R.color.bound_color);
+        checkpointAreaFillColor = ActivityCompat.getColor(this, R.color.checkpoint_area_fill_color);
+        checkpointBoundColor = ActivityCompat.getColor(this, R.color.checkpoint_bound_color);
+
+        controlAreaFillColor = ActivityCompat.getColor(this, R.color.control_area_fill_color);
+        controlBoundColor = ActivityCompat.getColor(this, R.color.control_bound_color);
     }
 
     private void onLocationEnabled() {
         mapFragment.getMapAsync(this);
         canStartService = true;
-
-        startGeofencingIfNotStarted();
     }
 
     private void verifyPermissions() {
@@ -271,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void checkLocationEnabled() {
-        if (!CalcUtils.isLocationEnabled(this)) {
+        if (!LocationUtils.isLocationEnabled(this)) {
             Intent enableLocationIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivityForResult(enableLocationIntent, REQUEST_ENABLE_LOCATION);
         }
@@ -296,50 +291,4 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
     }
-
-    /**
-     * Utils code
-     */
-
-    private void startGeofencingIfNotStarted() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(getApplicationContext(), "Location permission required", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        app.getGeofenceManager().startGeofencingIfNotStarted(getGeofenceAPIResultCallback(true));
-
-        Toast.makeText(getApplicationContext(), "Geofencing started", Toast.LENGTH_SHORT).show();
-    }
-
-    public void stopGeofencing() {
-        app.getGeofenceManager().stopGeofencing(getGeofenceAPIResultCallback(true));
-
-        Toast.makeText(getApplicationContext(), "Geofencing stopped", Toast.LENGTH_SHORT).show();
-    }
-
-    @NonNull
-    private ResolvingResultCallbacks<Status> getGeofenceAPIResultCallback(final boolean isStart) {
-        return new ResolvingResultCallbacks<Status>(MainActivity.this, GEOFENCE_REQUEST_CODE) {
-            @Override
-            public void onSuccess(@NonNull Status status) {
-                String message = getResources().getString(R.string.result_success);
-                String action = (isStart) ? "added" : "removed";
-                message = String.format(message, action);
-
-                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onUnresolvableFailure(@NonNull Status status) {
-                String message = getResources().getString(R.string.result_failed);
-                String action = (isStart) ? "added" : "removed";
-                message = String.format(message, action);
-
-                Toast.makeText(MainActivity.this, message + " Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
-            }
-        };
-    }
-
-
 }

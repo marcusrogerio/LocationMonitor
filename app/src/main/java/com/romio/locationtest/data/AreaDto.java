@@ -12,15 +12,16 @@ import java.util.Date;
  */
 
 @DatabaseTable(tableName = "area")
-public class TargetAreaDto {
-    private static final String NAME_FIELD = "name";
-    private static final String DESCRIPTION_FIELD = "description";
-    private static final String DATE_CREATED_FIELD = "date_created";
-    private static final String ID_FIELD = "id";
-    private static final String RADIUS_FIELD = "radius";
-    private static final String LATITUDE_FIELD = "latitude";
-    private static final String LONGITUDE_FIELD = "longitude";
-    private static final String ENABLED_FIELD = "enabled";
+public class AreaDto {
+    public static final String NAME_FIELD = "name";
+    public static final String DESCRIPTION_FIELD = "description";
+    public static final String DATE_CREATED_FIELD = "date_created";
+    public static final String ID_FIELD = "id";
+    public static final String RADIUS_FIELD = "radius";
+    public static final String LATITUDE_FIELD = "latitude";
+    public static final String LONGITUDE_FIELD = "longitude";
+    public static final String ENABLED_FIELD = "enabled";
+    public static final String TYPE_FIELD = "zone_type";
 
     @DatabaseField(id = true, columnName = ID_FIELD)
     private String id;
@@ -46,14 +47,18 @@ public class TargetAreaDto {
     @DatabaseField(columnName = ENABLED_FIELD)
     private boolean enabled;
 
-    public TargetAreaDto() { }
+    @DatabaseField(columnName = TYPE_FIELD)
+    private ZoneType zoneType;
 
-    public TargetAreaDto(String id, String name, double latitude, double longitude, int radius) {
+    public AreaDto() { }
+
+    public AreaDto(String id, String name, double latitude, double longitude, int radius, ZoneType zoneType) {
         this.id = id;
         this.areaName = name;
         this.latitude = latitude;
         this.longitude = longitude;
         this.radius = radius;
+        this.zoneType = zoneType;
     }
 
     public String getId() {
@@ -120,6 +125,14 @@ public class TargetAreaDto {
         this.enabled = enabled;
     }
 
+    public ZoneType getZoneType() {
+        return zoneType;
+    }
+
+    public void setZoneType(ZoneType zoneType) {
+        this.zoneType = zoneType;
+    }
+
     @Override
     public int hashCode() {
         return id.hashCode();
@@ -127,8 +140,8 @@ public class TargetAreaDto {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof TargetAreaDto) {
-            TargetAreaDto ta2 = (TargetAreaDto) obj;
+        if (obj instanceof AreaDto) {
+            AreaDto ta2 = (AreaDto) obj;
             return TextUtils.equals(ta2.id, this.id);
         }
         return false;

@@ -1,46 +1,28 @@
 package com.romio.locationtest.ui.pojo;
 
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.text.TextUtils;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.romio.locationtest.data.ZoneType;
 
 /**
  * Created by roman on 1/9/17
  */
 
-public class TargetArea implements Parcelable {
+public class Area {
     private String areaName;
     private LatLng areaCenter;
+    private ZoneType zoneType;
     private int radius;
 
-    public TargetArea(String areaName, LatLng areaCenter, int radius) {
+    public Area(String areaName, LatLng areaCenter, ZoneType zoneType, int radius) {
         this.areaName = areaName;
         this.areaCenter = areaCenter;
         this.radius = radius;
+        this.zoneType = zoneType;
     }
 
-    public TargetArea() {
-    }
-
-    protected TargetArea(Parcel in) {
-        areaName = in.readString();
-        areaCenter = in.readParcelable(LatLng.class.getClassLoader());
-        radius = in.readInt();
-    }
-
-    public static final Creator<TargetArea> CREATOR = new Creator<TargetArea>() {
-        @Override
-        public TargetArea createFromParcel(Parcel in) {
-            return new TargetArea(in);
-        }
-
-        @Override
-        public TargetArea[] newArray(int size) {
-            return new TargetArea[size];
-        }
-    };
+    public Area() { }
 
     public String getAreaName() {
         return areaName;
@@ -66,16 +48,12 @@ public class TargetArea implements Parcelable {
         this.radius = radius;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    public ZoneType getZoneType() {
+        return zoneType;
     }
 
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(areaName);
-        dest.writeParcelable(areaCenter, flags);
-        dest.writeInt(radius);
+    public void setZoneType(ZoneType zoneType) {
+        this.zoneType = zoneType;
     }
 
     @Override
@@ -85,8 +63,8 @@ public class TargetArea implements Parcelable {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof TargetArea) {
-            TargetArea ta2 = (TargetArea) obj;
+        if (obj instanceof Area) {
+            Area ta2 = (Area) obj;
             return TextUtils.equals(ta2.areaName, this.areaName) && ta2.radius == this.radius;
         }
         return false;

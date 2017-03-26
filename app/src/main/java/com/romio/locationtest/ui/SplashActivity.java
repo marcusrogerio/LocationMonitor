@@ -1,7 +1,6 @@
 package com.romio.locationtest.ui;
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
@@ -9,9 +8,10 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.R;
+import com.romio.locationtest.utils.GoogleAPIHelper;
+import com.romio.locationtest.utils.GoogleAPIHelperCallback;
 
 /**
  * Created by roman on 3/24/17
@@ -21,7 +21,6 @@ public class SplashActivity extends AppCompatActivity {
 
     public static final String TAG = SplashActivity.class.getSimpleName();
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-    private GoogleApiClient googleApiClient;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,47 +54,38 @@ public class SplashActivity extends AppCompatActivity {
 
     private void buildAndConnectApiClient() {
         LocationMonitorApp app = (LocationMonitorApp) getApplication();
-        googleApiClient = app.getGoogleApiClient();
+        GoogleApiClient googleApiClient = app.getGoogleApiClient();
 
         if (googleApiClient == null) {
-            googleApiClient = new GoogleApiClient.Builder(this)
-                    .addConnectionCallbacks(connectionCallback)
-                    .addOnConnectionFailedListener(onConnectionFailedListener)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
+            new GoogleAPIHelper(googleAPIHelperCallback).buildApiClient(this);
 
-        if (!googleApiClient.isConnected()) {
-            googleApiClient.connect();
         } else {
-            moveToMainActivity();
+            if (!googleApiClient.isConnected()) {
+                googleApiClient.connect();
+            } else {
+                moveToMainActivity();
+            }
         }
     }
 
-    private GoogleApiClient.OnConnectionFailedListener onConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
-        @Override
-        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Toast.makeText(SplashActivity.this, connectionResult.getErrorMessage(), Toast.LENGTH_LONG).show();
-        }
-    };
-
-    private GoogleApiClient.ConnectionCallbacks connectionCallback = new GoogleApiClient.ConnectionCallbacks() {
-
-        @Override
-        public void onConnected(@org.jetbrains.annotations.Nullable Bundle bundle) {
-            moveToMainActivity();
-        }
-
-        @Override
-        public void onConnectionSuspended(int i) {
-            Toast.makeText(SplashActivity.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
-        }
-    };
-
     private void moveToMainActivity() {
-        LocationMonitorApp app = (LocationMonitorApp) getApplication();
-        app.setGoogleApiClient(googleApiClient);
         MainActivity.startActivity(this);
     }
 
+    private GoogleAPIHelperCallback googleAPIHelperCallback = new GoogleAPIHelperCallback() {
+        @Override
+        public void onError(String errorMessage) {
+            Toast.makeText(SplashActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+        }
+
+        @Override
+        public void onConnected() {
+            moveToMainActivity();
+        }
+
+        @Override
+        public void onConnectionSuspended() {
+            Toast.makeText(SplashActivity.this, "Connection Suspended", Toast.LENGTH_SHORT).show();
+        }
+    };
 }

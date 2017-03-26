@@ -1,4 +1,4 @@
-package com.romio.locationtest.data.manager;
+package com.romio.locationtest.data.repository;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,7 +11,7 @@ import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 
 import com.romio.locationtest.R;
-import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.AreaDto;
 import com.romio.locationtest.ui.MainActivity;
 
 /**
@@ -29,7 +29,7 @@ public class MockTrackingManager implements TrackingManager {
     }
 
     @Override
-    public void enterArea(TargetAreaDto newTargetArea, Location location) {
+    public void enterArea(AreaDto newTargetArea, Location location) {
         String message = "Entered " + newTargetArea.getAreaName();
         String title = "Area status changed";
 
@@ -37,7 +37,7 @@ public class MockTrackingManager implements TrackingManager {
     }
 
     @Override
-    public void leaveArea(TargetAreaDto lastArea, Location location) {
+    public void leaveArea(AreaDto lastArea, Location location) {
         String message = "Leaved " + lastArea.getAreaName();
         String title = "Area status changed";
 
@@ -45,7 +45,7 @@ public class MockTrackingManager implements TrackingManager {
     }
 
     @Override
-    public void changeArea(TargetAreaDto lastArea, TargetAreaDto newTargetArea, Location location) {
+    public void changeArea(AreaDto lastArea, AreaDto newTargetArea, Location location) {
         String message = "Areas changed from " + lastArea.getAreaName() + " to " + newTargetArea.getAreaName();
         String title = "Areas changed";
 
@@ -53,7 +53,7 @@ public class MockTrackingManager implements TrackingManager {
     }
 
     @Override
-    public void wanderInArea(TargetAreaDto targetArea, Location location) {
+    public void wanderInArea(AreaDto targetArea, Location location) {
         String title = "Presence in Area";
         String message = targetArea.getAreaName() + ".\n Latitude: " + location.getLatitude() + "\nLongitude: " + location.getLongitude();
 

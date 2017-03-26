@@ -4,13 +4,13 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationManager;
 
-import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.AreaDto;
 
 /**
  * Created by roman on 1/14/17
  */
 
-public class CalcUtils {
+public class LocationUtils {
 
     public static double distance(
             double lat1, double lng1, double lat2, double lng2) {
@@ -24,7 +24,7 @@ public class CalcUtils {
         return earthRadius * hipotenuse * 1000;
     }
 
-    public static boolean isInside(TargetAreaDto targetArea, Location location) {
+    public static boolean isInside(AreaDto targetArea, Location location) {
         double distance = distance(
                 targetArea.getLatitude(),
                 targetArea.getLongitude(),

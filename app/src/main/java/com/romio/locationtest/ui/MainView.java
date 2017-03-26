@@ -1,6 +1,6 @@
 package com.romio.locationtest.ui;
 
-import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.AreaDto;
 
 import java.util.List;
 
@@ -10,11 +10,11 @@ import java.util.List;
 
 public interface MainView {
 
-    void addArea(TargetAreaDto targetArea);
+    void addArea(AreaDto targetArea);
 
     void clearAreas();
 
     void showError(String message);
 
-    void onAreasLoaded(List<TargetAreaDto> targetAreaDtos);
+    void onAreasLoaded(List<AreaDto> areaDtos);
 }

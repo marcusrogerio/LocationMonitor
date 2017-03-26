@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.romio.locationtest">
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -33,12 +34,25 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name=".receiver.BootCompletedIntentReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receiver.LocationProviderChangedReceiver">
+            <intent-filter>
+                <action android:name="android.location.PROVIDERS_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".service.LocationMonitorService"
             android:process=":remote" />
 
         <service
-            android:name=".UploadTrackingDataJobService"
+            android:name=".service.UploadTrackingDataJobService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
@@ -50,6 +64,7 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/maps_api_key" />
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="8d571a8db14e6c631ed89100bb9f4a9ddef723ef" />

@@ -1,4 +1,4 @@
-package com.romio.locationtest.data.manager;
+package com.romio.locationtest.data.repository;
 
 import android.content.Context;
 import android.location.Location;
@@ -6,7 +6,7 @@ import android.provider.Settings.Secure;
 import android.util.Log;
 
 import com.romio.locationtest.data.AreaAction;
-import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.AreaDto;
 import com.romio.locationtest.data.TrackingDto;
 import com.romio.locationtest.data.TrackingMapper;
 import com.romio.locationtest.data.db.DBHelper;
@@ -40,7 +40,7 @@ public class TrackingManagerImpl implements TrackingManager {
     }
 
     @Override
-    public void enterArea(TargetAreaDto area, Location location) {
+    public void enterArea(AreaDto area, Location location) {
         Calendar calendar = Calendar.getInstance(utcTimeZone);
 
         TrackingDto trackingDto = new TrackingDto();
@@ -55,7 +55,7 @@ public class TrackingManagerImpl implements TrackingManager {
     }
 
     @Override
-    public void leaveArea(TargetAreaDto area, Location location) {
+    public void leaveArea(AreaDto area, Location location) {
         Calendar calendar = Calendar.getInstance(utcTimeZone);
 
         TrackingDto trackingDto = new TrackingDto();
@@ -70,13 +70,13 @@ public class TrackingManagerImpl implements TrackingManager {
     }
 
     @Override
-    public void changeArea(TargetAreaDto oldArea, TargetAreaDto newArea, Location location) {
+    public void changeArea(AreaDto oldArea, AreaDto newArea, Location location) {
         leaveArea(oldArea, location);
         enterArea(newArea, location);
     }
 
     @Override
-    public void wanderInArea(TargetAreaDto area, Location location) {
+    public void wanderInArea(AreaDto area, Location location) {
         Calendar calendar = Calendar.getInstance(utcTimeZone);
 
         TrackingDto trackingDto = new TrackingDto();

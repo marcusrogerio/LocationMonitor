@@ -11,9 +11,12 @@ import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 
 import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofenceStatusCodes;
 import com.google.android.gms.location.GeofencingEvent;
+import com.google.android.gms.location.LocationStatusCodes;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.R;
+import com.romio.locationtest.tracking.LocationManager;
 import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.ui.SplashActivity;
 
@@ -34,37 +37,44 @@ public class GeofenceTransitionsIntentService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         LocationMonitorApp app = (LocationMonitorApp) getApplication();
+        LocationManager locationManager = app.getLocationManager();
 
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
-            notifyUser("Error code: " + geofencingEvent.getErrorCode(), "Location Monitor Error");
+            if (GeofenceStatusCodes.GEOFENCE_NOT_AVAILABLE == geofencingEvent.getErrorCode()) {
+                notifyUser("Location is disabled. App will not work");
+
+            } else {
+                notifyUser("Error code: " + geofencingEvent.getErrorCode());
+            }
 
         } else {
             switch (geofencingEvent.getGeofenceTransition()) {
                 case Geofence.GEOFENCE_TRANSITION_DWELL: {
                     String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
-                    notifyUser("Entered " + areaName, "Location Monitor");
+                    notifyUser("Entered " + areaName);
 
-                    app.startLocationMonitorService();
+                    locationManager.startLocationMonitorService();
                 }
                 break;
                 case Geofence.GEOFENCE_TRANSITION_EXIT: {
                     String areaName = geofencingEvent.getTriggeringGeofences().get(0).getRequestId();
-                    notifyUser("Exited " + areaName, "Location Monitor");
+                    notifyUser("Exited " + areaName);
 
-                    app.stopLocationMonitorService();
+                    locationManager.stopLocationMonitorService();
                 }
                 break;
             }
         }
     }
 
-    private void notifyUser(String message, String title) {
+    private void notifyUser(String message) {
+        String appName = getString(R.string.app_name);
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setSmallIcon(R.drawable.ic_global_18dp)
-                        .setContentTitle(title)
+                        .setContentTitle(appName)
                         .setLights(Color.BLUE, 500, 500)
                         .setSound(alarmSound)
                         .setContentText(message);

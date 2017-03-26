@@ -1,13 +1,8 @@
 package com.romio.locationtest;
 
-import android.app.AlarmManager;
 import android.app.Application;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.firebase.jobdispatcher.Constraint;
@@ -19,17 +14,18 @@ import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
-import com.romio.locationtest.data.manager.AreasManager;
-import com.romio.locationtest.data.manager.AreasManagerImpl;
-import com.romio.locationtest.data.manager.MockTrackingManager;
-import com.romio.locationtest.data.manager.TrackingManager;
-import com.romio.locationtest.data.manager.TrackingManagerImpl;
 import com.romio.locationtest.data.db.DBHelper;
 import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.db.DataBaseHelper;
+import com.romio.locationtest.data.repository.AreasManager;
+import com.romio.locationtest.data.repository.AreasManagerImpl;
+import com.romio.locationtest.data.repository.MockTrackingManager;
+import com.romio.locationtest.data.repository.TrackingManager;
 import com.romio.locationtest.geofence.GeofenceManager;
-import com.romio.locationtest.service.LocationMonitorService;
-import com.romio.locationtest.ui.MainActivity;
+import com.romio.locationtest.geofence.GeofenceManagerImpl;
+import com.romio.locationtest.service.UploadTrackingDataJobService;
+import com.romio.locationtest.tracking.LocationManager;
+import com.romio.locationtest.tracking.LocationManagerImpl;
 import com.romio.locationtest.utils.NetworkManager;
 import com.romio.locationtest.utils.NetworkManagerImpl;
 
@@ -42,7 +38,7 @@ import io.fabric.sdk.android.Fabric;
 public class LocationMonitorApp extends Application implements DBHelper {
 
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
-    private static final String LOCATION_MONITOR_ALARM = "com.romio.locationtest.alarm.location_monitor";
+
     private static final String LOCATION_DATA_UPLOAD = "com.romio.locationtest.location_data_upload";
     private static final String JOB_TAG = LocationMonitorApp.class.getSimpleName();
 
@@ -50,26 +46,21 @@ public class LocationMonitorApp extends Application implements DBHelper {
     private TrackingManager trackingManager;
     private NetworkManager networkManager;
     private DataBaseHelper databaseHelper;
-
-    private int locationMonitorOffset = 3000;
-    private int locationMonitorInterval = 120000;
-    private GoogleApiClient googleApiClient;
-    private GeofenceManager geofenceManager;
+    private LocationManager locationManager;
+    private volatile GoogleApiClient googleApiClient;
+    private volatile GeofenceManager geofenceManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
         Fabric.with(this, new Crashlytics());
 
-        locationMonitorOffset = getResources().getInteger(R.integer.location_monitor_time_offset);
-        locationMonitorInterval = getResources().getInteger(R.integer.location_monitor_time_interval);
-
         initUploadDataScheduler();
     }
 
     public AreasManager getAreasManager() {
         if (areasManager == null) {
-            areasManager = new AreasManagerImpl(this, getNetworkManager());
+            areasManager = new AreasManagerImpl(this, getNetworkManager(), getGeofenceManager());
         }
 
         return areasManager;
@@ -84,12 +75,20 @@ public class LocationMonitorApp extends Application implements DBHelper {
         return trackingManager;
     }
 
-    private NetworkManager getNetworkManager() {
-        if (networkManager == null) {
-            networkManager = new NetworkManagerImpl(this);
+    public LocationManager getLocationManager() {
+        if (locationManager != null) {
+            locationManager = new LocationManagerImpl(this);
         }
 
-        return networkManager;
+        return locationManager;
+    }
+
+    public GeofenceManager getGeofenceManager() {
+        if (geofenceManager == null) {
+            geofenceManager = new GeofenceManagerImpl(this, getLocationManager());
+        }
+
+        return geofenceManager;
     }
 
     public DBHelper getDBHelper() {
@@ -113,46 +112,20 @@ public class LocationMonitorApp extends Application implements DBHelper {
         }
     }
 
+    public GoogleApiClient getGoogleApiClient() {
+        return googleApiClient;
+    }
 
-    /**
-     * location service section
-     */
-    public void startLocationMonitorService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
+    public void setGoogleApiClient(GoogleApiClient googleApiClient) {
+        this.googleApiClient = googleApiClient;
+    }
 
-        if (!isLocationMonitorAlarmSet()) {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + locationMonitorOffset, locationMonitorInterval, pendingIntent);
-            saveLocationMonitorAlarmWasSet(true);
+    private NetworkManager getNetworkManager() {
+        if (networkManager == null) {
+            networkManager = new NetworkManagerImpl(this);
         }
-    }
 
-    public void stopLocationMonitorService() {
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent pendingIntent = prepareLocationMonitorPendingIntent();
-
-        alarmManager.cancel(pendingIntent);
-        saveLocationMonitorAlarmWasSet(false);
-        LocationMonitorService.clearLastArea(this);
-    }
-
-    public boolean isLocationMonitorAlarmSet() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return sharedPreferences.getBoolean(LOCATION_MONITOR_ALARM, false);
-    }
-
-    private PendingIntent prepareLocationMonitorPendingIntent() {
-        Intent intent = new Intent(getApplicationContext(), LocationMonitorService.class);
-
-        return PendingIntent.getService(this, LocationMonitorService.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    private void saveLocationMonitorAlarmWasSet(boolean isSet) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences
-                .edit()
-                .putBoolean(LOCATION_MONITOR_ALARM, isSet)
-                .commit();
+        return networkManager;
     }
 
     /**
@@ -186,25 +159,5 @@ public class LocationMonitorApp extends Application implements DBHelper {
     private void setDataUploadServiceState(boolean isSet) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.edit().putBoolean(LOCATION_DATA_UPLOAD, isSet).apply();
-    }
-
-    public GoogleApiClient getGoogleApiClient() {
-        return googleApiClient;
-    }
-
-    public void setGoogleApiClient(GoogleApiClient googleApiClient) {
-        this.googleApiClient = googleApiClient;
-    }
-
-    public GeofenceManager getGeofenceManager() {
-        if (geofenceManager == null) {
-            geofenceManager = new GeofenceManager(this);
-        }
-        
-        return geofenceManager;
-    }
-
-    public void setGeofenceManager(GeofenceManager geofenceManager) {
-        this.geofenceManager = geofenceManager;
     }
 }

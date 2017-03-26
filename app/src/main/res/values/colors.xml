@@ -3,6 +3,8 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
-    <color name="area_fill_color">#55303F9F</color>
-    <color name="bound_color">#3F51B5</color>
+    <color name="checkpoint_area_fill_color">#55303F9F</color>
+    <color name="checkpoint_bound_color">#3F51B5</color>
+    <color name="control_area_fill_color">#55be7618</color>
+    <color name="control_bound_color">#d75306</color>
 </resources>

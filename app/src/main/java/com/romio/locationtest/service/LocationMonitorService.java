@@ -20,20 +20,20 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.romio.locationtest.LocationMonitorApp;
-import com.romio.locationtest.data.manager.TrackingManager;
+import com.romio.locationtest.data.ZoneType;
+import com.romio.locationtest.data.repository.TrackingManager;
 import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.R;
-import com.romio.locationtest.WakeLocker;
-import com.romio.locationtest.data.manager.AreasManager;
-import com.romio.locationtest.data.TargetAreaDto;
-import com.romio.locationtest.utils.CalcUtils;
+import com.romio.locationtest.utils.WakeLocker;
+import com.romio.locationtest.data.repository.AreasManager;
+import com.romio.locationtest.data.AreaDto;
+import com.romio.locationtest.utils.LocationUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -61,7 +61,7 @@ public class LocationMonitorService extends Service {
     private static int notificationId = 0;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
-    private List<TargetAreaDto> targets = new ArrayList<>();
+    private List<AreaDto> targets = new ArrayList<>();
     private TrackingManager trackingManager;
     private boolean mRedelivery;
     private int startId;
@@ -132,11 +132,11 @@ public class LocationMonitorService extends Service {
     }
 
     private void setTargetAreas(AreasManager areasManager) {
-        List<TargetAreaDto> allAreas = areasManager.getTargetAreasFromDB();
+        List<AreaDto> allAreas = areasManager.getCheckpointsFromDB();
         if (allAreas != null && !allAreas.isEmpty()) {
-            for (TargetAreaDto targetAreaDto : allAreas) {
-                if (targetAreaDto.isEnabled()) {
-                    targets.add(targetAreaDto);
+            for (AreaDto areaDto : allAreas) {
+                if (areaDto.isEnabled()) {
+                    targets.add(areaDto);
                 }
             }
         }
@@ -144,7 +144,7 @@ public class LocationMonitorService extends Service {
 
     private void getCurrentLocation() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                CalcUtils.isLocationEnabled(this)) {
+                LocationUtils.isLocationEnabled(this)) {
 
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             String provider = setProvider(locationManager);
@@ -207,8 +207,8 @@ public class LocationMonitorService extends Service {
             Log.d(TAG, "No target areas specified");
 
         } else {
-            TargetAreaDto lastArea = retrieveOldArea();
-            TargetAreaDto newTargetArea = getCurrentArea(location);
+            AreaDto lastArea = retrieveOldArea();
+            AreaDto newTargetArea = getCurrentArea(location);
 
             String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
             Log.d(TAG, "Current area: " + area);
@@ -233,7 +233,7 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private void notifyUserIsInArea(TargetAreaDto targetArea, Location location) {
+    private void notifyUserIsInArea(AreaDto targetArea, Location location) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         long currentMoment = new Date().getTime();
 
@@ -252,7 +252,7 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private TargetAreaDto retrieveOldArea() {
+    private AreaDto retrieveOldArea() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (!sharedPreferences.contains(CURRENT_AREA_NAME)) {
             return null;
@@ -264,7 +264,7 @@ public class LocationMonitorService extends Service {
         String name = sharedPreferences.getString(CURRENT_AREA_NAME, "");
         String id = sharedPreferences.getString(CURRENT_AREA_ID, "");
 
-        return new TargetAreaDto(id, name, latitude, longitude, radius);
+        return new AreaDto(id, name, latitude, longitude, radius, ZoneType.CHECKPOINT);
     }
 
     private void notifyUser(String message, String title) {
@@ -292,7 +292,7 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private static void saveCurrentArea(TargetAreaDto newTargetArea, Context context) {
+    private static void saveCurrentArea(AreaDto newTargetArea, Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (newTargetArea == null) {
             sharedPreferences
@@ -316,10 +316,10 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private TargetAreaDto getCurrentArea(Location location) {
-        for (TargetAreaDto targetAreaDto : targets) {
-            if (CalcUtils.isInside(targetAreaDto, location)) {
-                return targetAreaDto;
+    private AreaDto getCurrentArea(Location location) {
+        for (AreaDto areaDto : targets) {
+            if (LocationUtils.isInside(areaDto, location)) {
+                return areaDto;
             }
         }
 

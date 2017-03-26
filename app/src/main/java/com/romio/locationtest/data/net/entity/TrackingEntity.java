@@ -14,6 +14,9 @@ public class TrackingEntity {
     @SerializedName("zone_id")
     private String zoneId;
 
+    @SerializedName("zone_type")
+    private String zoneType;
+
     @SerializedName("tracking_id")
     private String trackingId;
 
@@ -72,5 +75,13 @@ public class TrackingEntity {
 
     public void setLongitude(double longitude) {
         this.longitude = longitude;
+    }
+
+    public String getZoneType() {
+        return zoneType;
+    }
+
+    public void setZoneType(String zoneType) {
+        this.zoneType = zoneType;
     }
 }

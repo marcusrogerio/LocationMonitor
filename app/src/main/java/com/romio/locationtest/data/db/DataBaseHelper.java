@@ -8,7 +8,7 @@ import com.j256.ormlite.android.apptools.OrmLiteSqliteOpenHelper;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
-import com.romio.locationtest.data.TargetAreaDto;
+import com.romio.locationtest.data.AreaDto;
 import com.romio.locationtest.data.TrackingDto;
 
 import java.sql.SQLException;
@@ -24,7 +24,7 @@ public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager
     private static final String DATABASE_NAME = "area_db";
     private static final int DATABASE_VERSION = 1;
 
-    private Dao<TargetAreaDto, String> areasDao = null;
+    private Dao<AreaDto, String> areasDao = null;
     private Dao<TrackingDto, String> trackingDao = null;
 
     public DataBaseHelper(Context context) {
@@ -35,7 +35,7 @@ public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager
     public void onCreate(SQLiteDatabase database, ConnectionSource connectionSource) {
         try {
             Log.i(TAG, "DB creation");
-            TableUtils.createTable(connectionSource, TargetAreaDto.class);
+            TableUtils.createTable(connectionSource, AreaDto.class);
             TableUtils.createTable(connectionSource, TrackingDto.class);
 
         } catch (SQLException e) {
@@ -49,7 +49,7 @@ public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager
     public void onUpgrade(SQLiteDatabase database, ConnectionSource connectionSource, int oldVersion, int newVersion) {
         try {
             Log.i(TAG, "DB upgrade");
-            TableUtils.dropTable(connectionSource, TargetAreaDto.class, true);
+            TableUtils.dropTable(connectionSource, AreaDto.class, true);
             TableUtils.dropTable(connectionSource, TrackingDto.class, true);
 
             onCreate(database, connectionSource);
@@ -61,9 +61,9 @@ public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager
     }
 
     @Override
-    public Dao<TargetAreaDto, String> getAreaDao() throws SQLException {
+    public Dao<AreaDto, String> getAreaDao() throws SQLException {
         if (areasDao == null) {
-            areasDao = getDao(TargetAreaDto.class);
+            areasDao = getDao(AreaDto.class);
         }
 
         return areasDao;
@@ -81,7 +81,7 @@ public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager
     @Override
     public void clearAreas() {
         try {
-            TableUtils.clearTable(getConnectionSource(), TargetAreaDto.class);
+            TableUtils.clearTable(getConnectionSource(), AreaDto.class);
 
         } catch (SQLException e) {
             Log.e(TAG, "Can't delete table", e);
@@ -103,7 +103,7 @@ public class DataBaseHelper extends OrmLiteSqliteOpenHelper implements DBManager
     @Override
     public void clearAll() {
         try {
-            TableUtils.clearTable(getConnectionSource(), TargetAreaDto.class);
+            TableUtils.clearTable(getConnectionSource(), AreaDto.class);
             TableUtils.clearTable(getConnectionSource(), TrackingDto.class);
 
         } catch (SQLException e) {
