@@ -18,7 +18,6 @@ import com.google.android.gms.location.LocationServices;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.R;
 import com.romio.locationtest.data.AreaDto;
-import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.tracking.LocationManager;
 
 import java.util.ArrayList;
@@ -36,14 +35,12 @@ public class GeofenceManagerImpl implements GeofenceManager {
 
     private LocationMonitorApp app;
     private List<Geofence> geofenceList = new ArrayList<>();
-    private AreasManager areasManager;
     private LocationManager locationManager;
     private int loiteringDelayInMilliseconds;
     private int notificationResponsivenessInMilliseconds;
 
     public GeofenceManagerImpl(LocationMonitorApp app, LocationManager locationManager) {
         this.app = app;
-        this.areasManager = app.getAreasManager();
         this.locationManager = locationManager;
 
         loiteringDelayInMilliseconds = app.getResources().getInteger(R.integer.loitering_delay);
@@ -96,7 +93,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
     }
 
     private GeofencingRequest getGeofencingRequest() {
-        List<AreaDto> areas = areasManager.getGeofenceAreasFromDB();
+        List<AreaDto> areas = app.getAreasManager().getGeofenceAreasFromDB();
         if (areas != null && !areas.isEmpty()) {
             for (AreaDto areaDto : areas) {
                 if (areaDto.isEnabled()) {
@@ -155,7 +152,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
     }
 
     private boolean hasGeofenceAreas() {
-        List<AreaDto> areas = areasManager.getGeofenceAreasFromDB();
+        List<AreaDto> areas = app.getAreasManager().getGeofenceAreasFromDB();
         if (areas != null && !areas.isEmpty()) {
             return true;
         }

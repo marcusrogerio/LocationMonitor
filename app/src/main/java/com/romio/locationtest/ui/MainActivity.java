@@ -36,6 +36,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.R;
 import com.romio.locationtest.data.AreaDto;
+import com.romio.locationtest.data.ZoneType;
 import com.romio.locationtest.utils.LocationUtils;
 
 import java.util.List;
@@ -181,18 +182,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void addArea(AreaDto targetArea) {
-        LatLng center = new LatLng(targetArea.getLatitude(), targetArea.getLongitude());
+    public void addArea(AreaDto areaDto) {
+        LatLng center = new LatLng(areaDto.getLatitude(), areaDto.getLongitude());
 
         map.addMarker(new MarkerOptions()
                 .position(center)
-                .title(targetArea.getAreaName()));
+                .title(areaDto.getAreaName()));
+
+        int strokeColor = (areaDto.getZoneType() == ZoneType.CHECKPOINT) ? checkpointBoundColor : controlBoundColor;
+        int fillColor = (areaDto.getZoneType() == ZoneType.CHECKPOINT) ? checkpointAreaFillColor : controlAreaFillColor;
 
         map.addCircle(new CircleOptions()
                 .center(center)
-                .radius(targetArea.getRadius())
-                .strokeColor(checkpointBoundColor)
-                .fillColor(checkpointAreaFillColor));
+                .radius(areaDto.getRadius())
+                .strokeColor(strokeColor)
+                .fillColor(fillColor));
     }
 
     @Override

@@ -60,7 +60,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public AreasManager getAreasManager() {
         if (areasManager == null) {
-            areasManager = new AreasManagerImpl(this, getNetworkManager(), getGeofenceManager());
+            areasManager = new AreasManagerImpl(this, this, getNetworkManager());
         }
 
         return areasManager;
@@ -76,7 +76,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
     }
 
     public LocationManager getLocationManager() {
-        if (locationManager != null) {
+        if (locationManager == null) {
             locationManager = new LocationManagerImpl(this);
         }
 
