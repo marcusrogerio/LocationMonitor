@@ -6,11 +6,11 @@
     <!--for location monitor-->
     <!--in milliseconds-->
     <integer name="location_monitor_time_interval">10000</integer>
-    <integer name="location_monitor_time_offset">2000</integer>
+    <integer name="start_location_monitor_time_offset">2000</integer>
 
     <!--for area monitor-->
     <!--in seconds-->
-    <integer name="area_monitor_time_interval">100</integer>
+    <integer name="tracking_interval">100</integer>
 
 
     <integer name="loitering_delay">5000</integer>

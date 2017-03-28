@@ -1,18 +1,13 @@
 package com.romio.locationtest.service;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -20,20 +15,20 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.romio.locationtest.LocationMonitorApp;
-import com.romio.locationtest.data.ZoneType;
-import com.romio.locationtest.data.repository.TrackingManager;
-import com.romio.locationtest.ui.MainActivity;
 import com.romio.locationtest.R;
-import com.romio.locationtest.utils.WakeLocker;
-import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.data.AreaDto;
+import com.romio.locationtest.data.ZoneType;
+import com.romio.locationtest.data.repository.AreasManager;
+import com.romio.locationtest.data.repository.TrackingManager;
 import com.romio.locationtest.utils.LocationUtils;
+import com.romio.locationtest.utils.NotificationUtils;
+import com.romio.locationtest.utils.WakeLocker;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -57,8 +52,6 @@ public class LocationMonitorService extends Service {
     private static final String CURRENT_AREA_NAME = "com.romio.locationtest.location.current.name";
     private static final String TIME_INSIDE_AREA_UPDATE = "com.romio.locationtest.location.area.inside.time";
 
-    private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
-    private static int notificationId = 0;
     private volatile Looper mServiceLooper;
     private volatile ServiceHandler mServiceHandler;
     private List<AreaDto> targets = new ArrayList<>();
@@ -153,7 +146,7 @@ public class LocationMonitorService extends Service {
                 locationManager.requestSingleUpdate(provider, locationListener, null);
 
             } else {
-                notifyUser("No location providers available", "Location Monitor");
+                NotificationUtils.notifyUser(getApplicationContext(), "No location providers available");
                 shutdown();
             }
 
@@ -182,7 +175,7 @@ public class LocationMonitorService extends Service {
             if (location != null) {
                 processLocationUpdate(location);
             } else {
-                notifyUser("Location is null", "LocationMonitor");
+                NotificationUtils.notifyUser(getApplicationContext(), "Location is null");
             }
 
             shutdown();
@@ -198,7 +191,7 @@ public class LocationMonitorService extends Service {
 
         @Override
         public void onProviderDisabled(String provider) {
-            notifyUser(provider + " is Disabled", "LocationMonitor");
+            NotificationUtils.notifyUser(getApplicationContext(), provider + " is Disabled");
         }
     };
 
@@ -208,7 +201,7 @@ public class LocationMonitorService extends Service {
 
         } else {
             AreaDto lastArea = retrieveOldArea();
-            AreaDto newTargetArea = getCurrentArea(location);
+            AreaDto newTargetArea = getCurrentArea(location, lastArea);
 
             String area = (newTargetArea != null) ? newTargetArea.getAreaName() : "null";
             Log.d(TAG, "Current area: " + area);
@@ -239,7 +232,7 @@ public class LocationMonitorService extends Service {
 
         if (preferences.contains(TIME_INSIDE_AREA_UPDATE)) {
             long lastUpdate = preferences.getLong(TIME_INSIDE_AREA_UPDATE, currentMoment);
-            long areaMonitorInterval = getResources().getInteger(R.integer.area_monitor_time_interval) * 1000;
+            long areaMonitorInterval = getResources().getInteger(R.integer.tracking_interval) * 1000;
 
             if (currentMoment - lastUpdate >= areaMonitorInterval) {
                 trackingManager.wanderInArea(targetArea, location);
@@ -267,31 +260,6 @@ public class LocationMonitorService extends Service {
         return new AreaDto(id, name, latitude, longitude, radius, ZoneType.CHECKPOINT);
     }
 
-    private void notifyUser(String message, String title) {
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder builder =
-                new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_add_location_18dp)
-                        .setContentTitle(title)
-                        .setLights(Color.BLUE, 500, 500)
-                        .setSound(alarmSound)
-                        .setContentText(message);
-
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.setContentIntent(resultPendingIntent);
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(notificationId, builder.build());
-
-        if (notificationId == MAX_NOTIFICATION_ID_NUMBER) {
-            notificationId = 0;
-        } else {
-            notificationId++;
-        }
-    }
-
     private static void saveCurrentArea(AreaDto newTargetArea, Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         if (newTargetArea == null) {
@@ -316,14 +284,31 @@ public class LocationMonitorService extends Service {
         }
     }
 
-    private AreaDto getCurrentArea(Location location) {
+    private AreaDto getCurrentArea(@NonNull Location location, @Nullable AreaDto lastArea) {
+        List<AreaDto> presenceAreas = new ArrayList<>();
+
         for (AreaDto areaDto : targets) {
             if (LocationUtils.isInside(areaDto, location)) {
-                return areaDto;
+                presenceAreas.add(areaDto);
             }
         }
 
-        return null;
+        if (presenceAreas.isEmpty()) {
+            return null;
+
+        } else if (presenceAreas.size() == 1) {
+            return presenceAreas.get(0);
+
+        } else {
+            AreaDto currentArea = presenceAreas.get(0);
+            for (AreaDto areaDto : presenceAreas) {
+                if (areaDto.equals(lastArea)) {
+                    currentArea = areaDto;
+                }
+            }
+
+            return currentArea;
+        }
     }
 
     private void shutdown() {

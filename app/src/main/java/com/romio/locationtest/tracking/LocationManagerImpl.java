@@ -24,7 +24,7 @@ public class LocationManagerImpl implements LocationManager {
     public LocationManagerImpl(Context context) {
         this.context = context;
 
-        locationMonitorOffset = context.getResources().getInteger(R.integer.location_monitor_time_offset);
+        locationMonitorOffset = context.getResources().getInteger(R.integer.start_location_monitor_time_offset);
         locationMonitorInterval = context.getResources().getInteger(R.integer.location_monitor_time_interval);
     }
 
@@ -46,7 +46,7 @@ public class LocationManagerImpl implements LocationManager {
 
         alarmManager.cancel(pendingIntent);
         setLocationMonitorAlarmStatus(false);
-        LocationMonitorService.clearLastArea(context);
+//        LocationMonitorService.clearLastArea(context);
     }
 
     @Override

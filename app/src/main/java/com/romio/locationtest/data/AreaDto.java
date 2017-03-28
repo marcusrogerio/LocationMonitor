@@ -140,7 +140,7 @@ public class AreaDto {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof AreaDto) {
+        if (obj != null && obj instanceof AreaDto) {
             AreaDto ta2 = (AreaDto) obj;
             return TextUtils.equals(ta2.id, this.id);
         }
