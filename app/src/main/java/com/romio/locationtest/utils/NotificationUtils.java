@@ -1,10 +1,10 @@
 package com.romio.locationtest.utils;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -19,11 +19,15 @@ import com.romio.locationtest.ui.SplashActivity;
 
 public class NotificationUtils {
 
+    private static final String NOTIFICATION_ID_KEY = "com.romio.locationtest.utils.NotificationUtils.NOTIFICATION_ID_KEY";
     private static final int MAX_NOTIFICATION_ID_NUMBER = 1000;
-    private static int notificationId = 0;
-    private static int permanentNotificationId;
 
-    public static void notifyUser(Context context, String message, String title) {
+    public synchronized static void notifyUser(Context context, String message) {
+        String appName = context.getString(R.string.app_name);
+        notifyUser(context, message, appName);
+    }
+
+    public synchronized static void notifyUser(Context context, String message, String title) {
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(context)
@@ -33,27 +37,10 @@ public class NotificationUtils {
                         .setSound(alarmSound)
                         .setContentText(message);
 
-        Intent resultIntent = new Intent(context, SplashActivity.class);
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.setContentIntent(resultPendingIntent);
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(notificationId, builder.build());
-
-        if (notificationId == MAX_NOTIFICATION_ID_NUMBER) {
-            notificationId = 0;
-        } else {
-            notificationId++;
-        }
+        buildAndNotify(context, builder);
     }
 
-    public static void notifyUser(Context context, String message) {
-        String appName = context.getString(R.string.app_name);
-        notifyUser(context, message, appName);
-    }
-
-    public static void showPermanentNotification(Context context, String message) {
+    public synchronized static void showPermanentNotification(Context context, String message) {
         String appName = context.getString(R.string.app_name);
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder =
@@ -67,24 +54,44 @@ public class NotificationUtils {
                         .setCategory(NotificationCompat.CATEGORY_SERVICE)
                         .setContentText(message);
 
-        Intent resultIntent = new Intent(context, SplashActivity.class);
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        buildAndNotify(context, builder);
+    }
+
+    public synchronized static void hidePermanentNotification(Context context) {
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+    }
+
+    private static void buildAndNotify(Context context, NotificationCompat.Builder builder) {
+        Intent resultIntent = getResultIntent(context);
 
         PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(resultPendingIntent);
+
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        int notificationId = generateNotificationId(context);
         notificationManager.notify(notificationId, builder.build());
-        permanentNotificationId = notificationId;
+    }
+
+    private static Intent getResultIntent(Context context) {
+        Intent resultIntent = new Intent(context, SplashActivity.class);
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        return resultIntent;
+    }
+
+    private static int generateNotificationId(Context context) {
+        SharedPreferences preferences = context.getSharedPreferences(NotificationUtils.class.getSimpleName(), Context.MODE_PRIVATE);
+        int notificationId = preferences.getInt(NOTIFICATION_ID_KEY, 0);
 
         if (notificationId == MAX_NOTIFICATION_ID_NUMBER) {
             notificationId = 0;
         } else {
             notificationId++;
         }
-    }
 
-    public static void hidePermanentNotification(Context context) {
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(permanentNotificationId);
+        preferences.edit().putInt(NOTIFICATION_ID_KEY, notificationId).commit();
+
+        return notificationId;
     }
 }
