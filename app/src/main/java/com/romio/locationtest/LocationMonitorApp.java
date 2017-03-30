@@ -21,6 +21,7 @@ import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.data.repository.AreasManagerImpl;
 import com.romio.locationtest.data.repository.MockTrackingManager;
 import com.romio.locationtest.data.repository.TrackingManager;
+import com.romio.locationtest.data.repository.TrackingManagerImpl;
 import com.romio.locationtest.geofence.GeofenceManager;
 import com.romio.locationtest.geofence.GeofenceManagerImpl;
 import com.romio.locationtest.service.UploadTrackingDataJobService;
@@ -68,8 +69,8 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public TrackingManager getTrackingManager() {
         if (trackingManager == null) {
-//            trackingManager = new TrackingManagerImpl(this, networkManager, this);
-            trackingManager = new MockTrackingManager(this); // TODO: 3/24/17 TESTING
+            trackingManager = new TrackingManagerImpl(this, networkManager, this);
+//            trackingManager = new MockTrackingManager(this);
         }
 
         return trackingManager;
