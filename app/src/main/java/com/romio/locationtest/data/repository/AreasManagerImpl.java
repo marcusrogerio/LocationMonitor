@@ -17,6 +17,8 @@ import com.romio.locationtest.utils.NetworkManager;
 import com.romio.locationtest.utils.RxUtils;
 
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -44,10 +46,37 @@ public class AreasManagerImpl implements AreasManager {
     @Override
     public Observable<List<AreaDto>> loadAllAreas() {
         if (networkManager.isNetworkAvailable()) {
-            return getAllAreasFromNet();
+            return getAllAreasFromNet()
+                    .flatMap(new Func1<List<AreaDto>, Observable<List<AreaDto>>>() {
+                        @Override
+                        public Observable<List<AreaDto>> call(List<AreaDto> areaDtos) {
+                            updateAreasInDB(areaDtos);
+                            sendNewAreasLoadedBroadCast();
+                            return Observable.just(areaDtos);
+                        }
+                    });
 
         } else {
             return Observable.just(getAllAreasFromDB());
+        }
+    }
+
+    @Override
+    public Observable<Boolean> updateAreas() {
+        if (!networkManager.isNetworkAvailable()) {
+            return Observable.just(false);
+
+        } else {
+            return getAllAreasFromNet()
+                    .flatMap(new Func1<List<AreaDto>, Observable<Boolean>>() {
+                        @Override
+                        public Observable<Boolean> call(List<AreaDto> areaDtos) {
+                            boolean isDifference = isDifferencePresent(areaDtos);
+                            updateAreasInDB(areaDtos);
+
+                            return Observable.just(isDifference);
+                        }
+                    });
         }
     }
 
@@ -98,8 +127,6 @@ public class AreasManagerImpl implements AreasManager {
                     public List<AreaDto> call(BaseResponse<List<ZoneEntity>> listBaseResponse) {
                         List<AreaDto> areaDtos = TargetAreaMapper.map(listBaseResponse.getData());
                         filterEnabledAreas(areaDtos);
-                        updateAreasInDB(areaDtos);
-                        sendBroadCastAboutNewAreas();
                         return areaDtos;
                     }
                 });
@@ -117,7 +144,7 @@ public class AreasManagerImpl implements AreasManager {
         }
     }
 
-    private void sendBroadCastAboutNewAreas() {
+    private void sendNewAreasLoadedBroadCast() {
         Intent intent = new Intent("com.kolejka.areas.loaded");
         context.sendBroadcast(intent);
     }
@@ -141,4 +168,47 @@ public class AreasManagerImpl implements AreasManager {
             kolejkaZonesAPI = NetUtils.getRxRetrofit().create(KolejkaZonesAPI.class);
         }
     }
+
+    private boolean isDifferencePresent(List<AreaDto> areaDtosFromNet) {
+        List<AreaDto> dtosFromDB = getAllAreasFromDB();
+
+        // check size
+        if (dtosFromDB.size() != areaDtosFromNet.size()) {
+            return true;
+        }
+
+        Collections.sort(dtosFromDB, areaDtoComparator);
+        Collections.sort(areaDtosFromNet, areaDtoComparator);
+
+        for (int i = 0; i < dtosFromDB.size(); i++) {
+            AreaDto areaDtoFromDB = dtosFromDB.get(i);
+            AreaDto areaDtoFromNet = areaDtosFromNet.get(i);
+
+            if (!areaDtoFromDB.equals(areaDtoFromNet)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Comparator<AreaDto> areaDtoComparator = new Comparator<AreaDto>() {
+        @Override
+        public int compare(AreaDto o1, AreaDto o2) {
+            if (o1 != null && o2 != null) {
+                return o1.getId().compareTo(o2.getId());
+            }
+
+            if (o1 == null && o2 == null) {
+                return 0;
+            }
+
+            if (o1 == null && o2 != null) {
+                return 1;
+
+            } else {
+                return -1;
+            }
+        }
+    };
 }

@@ -54,14 +54,6 @@ public class GeofenceManagerImpl implements GeofenceManager {
     }
 
     @Override
-    public void startGeofencingAfterGeofenceAreasChanged() {
-        // TODO: 3/26/17 analyze areas (old, new etc)
-        if (!isGeofencing()) {
-            startGeofencing();
-        }
-    }
-
-    @Override
     public void startGeofencingAfterReboot() {
         locationManager.stopLocationMonitorService();
         startGeofencing();
@@ -90,6 +82,12 @@ public class GeofenceManagerImpl implements GeofenceManager {
         });
 
         setGeofensingStatus(false);
+    }
+
+    @Override
+    public void restart() {
+        stopGeofencing();
+        startGeofencing();
     }
 
     private GeofencingRequest getGeofencingRequest() {

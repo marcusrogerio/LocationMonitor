@@ -13,6 +13,8 @@ import rx.Observable;
 public interface AreasManager {
     Observable<List<AreaDto>> loadAllAreas();
 
+    Observable<Boolean> updateAreas();
+
     List<AreaDto> getCheckpointsFromDB();
 
     List<AreaDto> getAllAreasFromDB();

@@ -17,6 +17,9 @@ public class AreasLoadedReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         LocationMonitorApp app = (LocationMonitorApp) context.getApplicationContext();
         GeofenceManager geofenceManager = app.getGeofenceManager();
-        geofenceManager.startGeofencingAfterGeofenceAreasChanged();
+
+        if (!geofenceManager.isGeofencing()) {
+            geofenceManager.restart();
+        }
     }
 }

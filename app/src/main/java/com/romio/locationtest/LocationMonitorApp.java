@@ -19,11 +19,11 @@ import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.db.DataBaseHelper;
 import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.data.repository.AreasManagerImpl;
-import com.romio.locationtest.data.repository.MockTrackingManager;
 import com.romio.locationtest.data.repository.TrackingManager;
 import com.romio.locationtest.data.repository.TrackingManagerImpl;
 import com.romio.locationtest.geofence.GeofenceManager;
 import com.romio.locationtest.geofence.GeofenceManagerImpl;
+import com.romio.locationtest.service.UpdateAreasService;
 import com.romio.locationtest.service.UploadTrackingDataJobService;
 import com.romio.locationtest.tracking.LocationManager;
 import com.romio.locationtest.tracking.LocationManagerImpl;
@@ -40,8 +40,11 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     public static final String TAG = LocationMonitorApp.class.getSimpleName();
 
-    private static final String LOCATION_DATA_UPLOAD = "com.romio.locationtest.location_data_upload";
-    private static final String JOB_TAG = LocationMonitorApp.class.getSimpleName();
+    private static final String UPLOAD_TRACKING_KEY = "com.romio.locationtest.tracking.upload.key";
+    private static final String UPDATE_AREAS_KEY = "com.romio.locationtest.area.update.key";
+
+    private static final String UPLOAD_TRACKING_JOB_TAG = "com.romio.locationtest.tracking.upload.job";
+    private static final String UPDATE_AREAS_JOB_TAG = "com.romio.locationtest.area.update.job";
 
     private AreasManager areasManager;
     private TrackingManager trackingManager;
@@ -57,6 +60,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
         Fabric.with(this, new Crashlytics());
 
         initUploadDataScheduler();
+        initAreasUpdateScheduler();
     }
 
     public AreasManager getAreasManager() {
@@ -137,7 +141,7 @@ public class LocationMonitorApp extends Application implements DBHelper {
             FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
             Job myJob = dispatcher.newJobBuilder()
                     .setService(UploadTrackingDataJobService.class)
-                    .setTag(JOB_TAG)
+                    .setTag(UPLOAD_TRACKING_JOB_TAG)
                     .setRecurring(true)
                     .setLifetime(Lifetime.FOREVER)
                     .setTrigger(Trigger.executionWindow(60, 180))
@@ -154,11 +158,45 @@ public class LocationMonitorApp extends Application implements DBHelper {
 
     private boolean isDataUploadServiceSet() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return preferences.getBoolean(LOCATION_DATA_UPLOAD, false);
+        return preferences.getBoolean(UPLOAD_TRACKING_KEY, false);
     }
 
     private void setDataUploadServiceState(boolean isSet) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        preferences.edit().putBoolean(LOCATION_DATA_UPLOAD, isSet).apply();
+        preferences.edit().putBoolean(UPLOAD_TRACKING_KEY, isSet).apply();
+    }
+
+    /**
+     * update areas section
+     */
+
+    public void initAreasUpdateScheduler() {
+        if (!isAreasUpdateServiceSet()) {
+            FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
+            Job myJob = dispatcher.newJobBuilder()
+                    .setService(UpdateAreasService.class)
+                    .setTag(UPDATE_AREAS_JOB_TAG)
+                    .setRecurring(true)
+                    .setLifetime(Lifetime.FOREVER)
+                    .setTrigger(Trigger.executionWindow(600, 700))
+                    .setReplaceCurrent(false)
+                    .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
+                    .setConstraints(Constraint.ON_ANY_NETWORK)
+                    .build();
+
+            dispatcher.mustSchedule(myJob);
+
+            setAreasUpdateServiceState(true);
+        }
+    }
+
+    private boolean isAreasUpdateServiceSet() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getBoolean(UPDATE_AREAS_KEY, false);
+    }
+
+    private void setAreasUpdateServiceState(boolean isSet) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences.edit().putBoolean(UPDATE_AREAS_KEY, isSet).apply();
     }
 }

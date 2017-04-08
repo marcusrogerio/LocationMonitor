@@ -7,11 +7,11 @@ package com.romio.locationtest.geofence;
 public interface GeofenceManager {
     boolean isGeofencing();
 
-    void startGeofencingAfterGeofenceAreasChanged();
-
     void startGeofencingAfterReboot();
 
     void startGeofencingAfterLocationSettingsChanged();
 
     void stopGeofencing();
+
+    void restart();
 }

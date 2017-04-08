@@ -6,7 +6,6 @@ package com.romio.locationtest.tracking;
 
 public interface LocationManager {
 
-
     void startLocationMonitorService();
 
     void stopLocationMonitorService();
