@@ -112,10 +112,6 @@ public class LocationMonitorService extends Service {
         mServiceLooper.quit();
     }
 
-    public static void clearLastArea(Context context) {
-        saveCurrentArea(null, context);
-    }
-
     private void onHandleIntent(Intent intent) {
         AreasManager areasManager = ((LocationMonitorApp) getApplication()).getAreasManager();
         trackingManager = ((LocationMonitorApp) getApplication()).getTrackingManager();
@@ -218,7 +214,7 @@ public class LocationMonitorService extends Service {
                 trackingManager.changeArea(lastArea, newTargetArea, location);
             }
 
-            saveCurrentArea(newTargetArea, this);
+            saveCurrentArea(newTargetArea);
 
             if (newTargetArea != null) {
                 notifyUserIsInArea(newTargetArea, location);
@@ -246,7 +242,7 @@ public class LocationMonitorService extends Service {
     }
 
     private AreaDto retrieveOldArea() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
         if (!sharedPreferences.contains(CURRENT_AREA_NAME)) {
             return null;
         }
@@ -260,8 +256,8 @@ public class LocationMonitorService extends Service {
         return new AreaDto(id, name, latitude, longitude, radius, ZoneType.CHECKPOINT);
     }
 
-    private static void saveCurrentArea(AreaDto newTargetArea, Context context) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+    private void saveCurrentArea(AreaDto newTargetArea) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
         if (newTargetArea == null) {
             sharedPreferences
                     .edit()

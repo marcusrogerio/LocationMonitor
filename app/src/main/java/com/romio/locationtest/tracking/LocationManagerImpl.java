@@ -46,7 +46,6 @@ public class LocationManagerImpl implements LocationManager {
 
         alarmManager.cancel(pendingIntent);
         setLocationMonitorAlarmStatus(false);
-//        LocationMonitorService.clearLastArea(context);
     }
 
     @Override
