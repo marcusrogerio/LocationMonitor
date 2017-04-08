@@ -156,9 +156,6 @@ public class LocationMonitorService extends Service {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             return LocationManager.GPS_PROVIDER;
 
-        } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            return LocationManager.NETWORK_PROVIDER;
-
         } else {
             return null;
         }
