@@ -8,6 +8,7 @@ import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.geofence.GeofenceManager;
 import com.romio.locationtest.tracking.LocationManager;
+import com.romio.locationtest.utils.NotificationUtils;
 
 import rx.Observer;
 
@@ -20,7 +21,7 @@ public class UpdateAreasService extends JobService {
     private static final String TAG = UpdateAreasService.class.getSimpleName();
 
     @Override
-    public boolean onStartJob(JobParameters job) {
+    public boolean onStartJob(final JobParameters jobParameters) {
         LocationMonitorApp app = (LocationMonitorApp) getApplication();
 
         final GeofenceManager geofenceManager = app.getGeofenceManager();
@@ -29,11 +30,14 @@ public class UpdateAreasService extends JobService {
         AreasManager areasManager = app.getAreasManager();
         areasManager.updateAreas().subscribe(new Observer<Boolean>() {
             @Override
-            public void onCompleted() { }
+            public void onCompleted() {
+                jobFinished(jobParameters, false);
+            }
 
             @Override
             public void onError(Throwable e) {
                 Log.e(TAG, "Error updating areas", e);
+                jobFinished(jobParameters, false);
             }
 
             @Override

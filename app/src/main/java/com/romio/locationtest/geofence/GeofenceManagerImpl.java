@@ -19,6 +19,7 @@ import com.romio.locationtest.LocationMonitorApp;
 import com.romio.locationtest.R;
 import com.romio.locationtest.data.AreaDto;
 import com.romio.locationtest.tracking.LocationManager;
+import com.romio.locationtest.utils.NotificationUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +67,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
 
     @Override
     public void stopGeofencing() {
+        geofenceList.clear();
         LocationServices.GeofencingApi.removeGeofences(
                 app.getGoogleApiClient(),
                 getGeofencePendingIntent()
@@ -82,6 +84,7 @@ public class GeofenceManagerImpl implements GeofenceManager {
         });
 
         setGeofensingStatus(false);
+        NotificationUtils.hidePermanentNotification(app);
     }
 
     @Override

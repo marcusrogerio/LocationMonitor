@@ -19,6 +19,7 @@ import com.romio.locationtest.data.db.DBManager;
 import com.romio.locationtest.data.db.DataBaseHelper;
 import com.romio.locationtest.data.repository.AreasManager;
 import com.romio.locationtest.data.repository.AreasManagerImpl;
+import com.romio.locationtest.data.repository.MockTrackingManager;
 import com.romio.locationtest.data.repository.TrackingManager;
 import com.romio.locationtest.data.repository.TrackingManagerImpl;
 import com.romio.locationtest.geofence.GeofenceManager;
